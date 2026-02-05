@@ -618,13 +618,22 @@
                     // Success logic similar to script.js
                     const user = data.data.user;
                     const userData = {
+                        id: user.id,
                         email: user.email,
                         firstName: user.firstName,
                         name: `${user.firstName} ${user.lastName}`,
                         loginTime: new Date().toISOString()
                     };
                     localStorage.setItem('userSession', JSON.stringify(userData));
-                    window.location.href = 'index.php';
+                    
+                    // Check for redirect param
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const redirect = urlParams.get('redirect');
+                    if (redirect) {
+                        window.location.href = redirect;
+                    } else {
+                        window.location.href = 'index.php';
+                    }
                 } else {
                     const errorDiv = document.getElementById('auth-error');
                     if (errorDiv) {
@@ -666,13 +675,22 @@
               // Verify OTP with API (simulated here)
               const phone = document.getElementById('login-input').value;
                const userData = {
+                    id: 'otp-' + phone,
                     phone: phone,
                     firstName: 'User',
                     name: 'Mobile User',
                     loginTime: new Date().toISOString()
                 };
                 localStorage.setItem('userSession', JSON.stringify(userData));
-                window.location.href = 'index.php';
+                
+                // Check for redirect param
+                const urlParams = new URLSearchParams(window.location.search);
+                const redirect = urlParams.get('redirect');
+                if (redirect) {
+                    window.location.href = redirect;
+                } else {
+                    window.location.href = 'index.php';
+                }
           } else {
               alert('Please enter a valid 6-digit OTP');
               otpInput.style.borderColor = '#ef4444';
