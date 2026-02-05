@@ -1,0 +1,20 @@
+Orders Columns:
+id (int(11))
+order_number (varchar(50))
+user_id (int(11))
+total (decimal(10,2))
+subtotal (decimal(10,2))
+shipping (decimal(10,2))
+tax (decimal(10,2))
+payment_method (varchar(50))
+status (enum('Pending','Processing','Shipped','Delivered','Cancelled'))
+shipping_address (text)
+created_at (timestamp)
+
+Order Items Columns:
+id (int(11))
+order_id (int(11))
+product_id (int(11))
+quantity (int(11))
+price (decimal(10,2))
+size (varchar(20))
