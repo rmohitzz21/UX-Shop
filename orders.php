@@ -205,57 +205,73 @@
       });
 
       function loadOrders() {
-        const orders = JSON.parse(localStorage.getItem('orders')) || [];
-        const ordersList = document.getElementById('orders-list');
-        const ordersEmpty = document.getElementById('orders-empty');
-
-        if (orders.length === 0) {
-          ordersEmpty.style.display = 'block';
-          return;
+        const userSession = JSON.parse(localStorage.getItem('userSession'));
+        if (!userSession || !userSession.id) {
+           // Not logged in
+           window.location.href = 'signin.php?redirect=orders.php';
+           return;
         }
 
-        ordersEmpty.style.display = 'none';
-        ordersList.innerHTML = orders.map(order => `
-          <div class="order-card">
-            <div class="order-header">
-              <div class="order-info">
-                <h3>Order #${order.orderNumber}</h3>
-                <p class="order-date">Placed on ${new Date(order.date).toLocaleDateString('en-US', { 
-                  year: 'numeric', 
-                  month: 'long', 
-                  day: 'numeric' 
-                })}</p>
-              </div>
-              <div class="order-status">
-                <span class="status-badge status-${order.status}">${order.status}</span>
-              </div>
-            </div>
-
-            <div class="order-items">
-              ${order.items.map(item => `
-                <div class="order-item">
-                  <img src="${item.image}" alt="${item.name}" class="order-item-image" />
-                  <div class="order-item-details">
-                    <h4>${item.name}</h4>
-                    <p>${item.size ? `Size: ${item.size} • ` : ''}Quantity: ${item.quantity}</p>
+        fetch('api/order/get.php')
+          .then(response => response.json())
+          .then(data => {
+            const ordersList = document.getElementById('orders-list');
+            const ordersEmpty = document.getElementById('orders-empty');
+            
+            if (data.status === 'success' && data.data.length > 0) {
+              const orders = data.data;
+              ordersEmpty.style.display = 'none';
+              
+              ordersList.innerHTML = orders.map(order => `
+                <div class="order-card">
+                  <div class="order-header">
+                    <div class="order-info">
+                      <h3>Order #${order.orderNumber}</h3>
+                      <p class="order-date">Placed on ${new Date(order.date).toLocaleDateString('en-US', { 
+                        year: 'numeric', 
+                        month: 'long', 
+                        day: 'numeric' 
+                      })}</p>
+                    </div>
+                    <div class="order-status">
+                      <span class="status-badge status-${order.status.toLowerCase()}">${order.status}</span>
+                    </div>
                   </div>
-                  <div class="order-item-price">$${item.price * item.quantity}</div>
+      
+                  <div class="order-items">
+                    ${order.items.map(item => `
+                      <div class="order-item">
+                        <img src="${item.image}" alt="${item.name}" class="order-item-image" />
+                        <div class="order-item-details">
+                          <h4>${item.name}</h4>
+                          <p>${item.size ? `Size: ${item.size} • ` : ''}Quantity: ${item.quantity}</p>
+                        </div>
+                        <div class="order-item-price">$${item.price * item.quantity}</div>
+                      </div>
+                    `).join('')}
+                  </div>
+      
+                  <div class="order-footer">
+                    <div class="order-total">
+                      <span>Total: <strong>$${order.total}</strong></span>
+                    </div>
+                    <div class="order-actions">
+                      <a href="order-confirmation.php?order=${order.orderNumber}" class="btn-ghost small">View Details</a>
+                      <a href="order-tracking.php?order=${order.orderNumber}" class="btn-primary small">Track Order</a>
+                      ${order.status === 'Delivered' ? '<button class="btn-primary small" onclick="reorder(\'' + order.orderNumber + '\')">Reorder</button>' : ''}
+                    </div>
+                  </div>
                 </div>
-              `).join('')}
-            </div>
-
-            <div class="order-footer">
-              <div class="order-total">
-                <span>Total: <strong>$${order.total}</strong></span>
-              </div>
-              <div class="order-actions">
-                <a href="order-confirmation.php?order=${order.orderNumber}" class="btn-ghost small">View Details</a>
-                <a href="order-tracking.php?order=${order.orderNumber}" class="btn-primary small">Track Order</a>
-                ${order.status === 'Delivered' ? '<button class="btn-primary small" onclick="reorder(\'' + order.orderNumber + '\')">Reorder</button>' : ''}
-              </div>
-            </div>
-          </div>
-        `).join('');
+              `).join('');
+            } else {
+              ordersEmpty.style.display = 'block';
+              // ordersList.innerHTML = ''; // Keep empty div inside
+            }
+          })
+          .catch(err => {
+            console.error('Failed to load orders', err);
+            document.getElementById('orders-empty').style.display = 'block';
+          });
       }
 
       function reorder(orderNumber) {

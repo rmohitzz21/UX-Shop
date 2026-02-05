@@ -418,23 +418,38 @@
     }
 
     function loadAccountOrders() {
-      const orders = JSON.parse(localStorage.getItem('orders')) || [];
-      const ordersList = document.getElementById('account-orders-list');
-
-      if (orders.length === 0) {
-        ordersList.innerHTML = '<p class="empty-message">No orders yet.</p>';
-        return;
+      // Check auth
+      const userSession = JSON.parse(localStorage.getItem('userSession'));
+      if (!userSession || !userSession.id) {
+         // Not logged in or mock user
+         // For now do nothing or show empty
+         document.getElementById('account-orders-list').innerHTML = '<p class="empty-message">Please log in to view orders.</p>';
+         return;
       }
 
-      ordersList.innerHTML = orders.slice(0, 5).map(order => `
-          <div class="account-order-item">
-            <div>
-              <h4>Order #${order.orderNumber}</h4>
-              <p>${new Date(order.date).toLocaleDateString()} • $${order.total}</p>
-            </div>
-            <a href="order-confirmation.php?order=${order.orderNumber}" class="btn-ghost small">View</a>
-          </div>
-        `).join('');
+      fetch('api/order/get.php')
+      .then(res => res.json())
+      .then(data => {
+          const ordersList = document.getElementById('account-orders-list');
+          if (data.status === 'success' && data.data.length > 0) {
+              const orders = data.data;
+              ordersList.innerHTML = orders.slice(0, 5).map(order => `
+                <div class="account-order-item">
+                  <div>
+                    <h4>Order #${order.orderNumber}</h4>
+                    <p>${new Date(order.date).toLocaleDateString()} • $${order.total} • <span class="status-badge status-${order.status.toLowerCase()}">${order.status}</span></p>
+                  </div>
+                  <a href="orders.php" class="btn-ghost small">View Details</a>
+                </div>
+              `).join('');
+          } else {
+              ordersList.innerHTML = '<p class="empty-message">No orders yet.</p>';
+          }
+      })
+      .catch(err => {
+          console.error('Failed to load orders', err);
+          document.getElementById('account-orders-list').innerHTML = '<p class="empty-message">Failed to load orders.</p>';
+      });
     }
 
     function setupTabNavigation() {
