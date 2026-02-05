@@ -616,7 +616,7 @@
             .then(data => {
                 if (data.status === 'success') {
                     // Success logic similar to script.js
-                    const user = data.user;
+                    const user = data.data.user;
                     const userData = {
                         email: user.email,
                         firstName: user.firstName,

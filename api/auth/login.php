@@ -5,16 +5,14 @@ require_once '../../includes/config.php';
 $input = json_decode(file_get_contents('php://input'), true);
 
 if (!$input) {
-    echo json_encode(['status' => 'error', 'message' => 'Invalid input']);
-    exit;
+    sendResponse("error", "Invalid input", null, 400);
 }
 
 $email = $input['email'] ?? '';
 $password = $input['password'] ?? '';
 
 if (empty($email) || empty($password)) {
-    echo json_encode(['status' => 'error', 'message' => 'Email and password are required']);
-    exit;
+    sendResponse("error", "Email and password are required", null, 400);
 }
 
 $stmt = $conn->prepare("SELECT id, email, password_hash, first_name, last_name, role, is_blocked FROM users WHERE email = ?");
@@ -24,15 +22,11 @@ $result = $stmt->get_result();
 
 if ($user = $result->fetch_assoc()) {
     if ($user['is_blocked'] == 1) {
-        echo json_encode(['status' => 'error', 'message' => 'Your account has been blocked. Please contact support.']);
-        exit;
+        sendResponse("error", "Your account has been blocked. Please contact support.", null, 403);
     }
 
     if (password_verify($password, $user['password_hash'])) {
         // Start session
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
-        }
         
         $_SESSION['user_id'] = $user['id'];
         $_SESSION['email'] = $user['email'];
