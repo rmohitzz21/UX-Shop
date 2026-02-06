@@ -33,59 +33,69 @@ if (empty($name) || empty($category) || empty($price)) {
     exit;
 }
 
-// Handle Image Upload
-$imagePath = '';
-if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
+// Handle Media Upload (Multiple Files)
+$mainImagePath = '';
+$uploadedMedia = []; // To store successful uploads before DB insertion
+
+if (isset($_FILES['media']) && !empty($_FILES['media']['name'][0])) {
     // Define upload directory
     $uploadDir = '../../../img/products/';
     
     // Create directory if it doesn't exist
     if (!file_exists($uploadDir)) {
-        if (!mkdir($uploadDir, 0777, true)) {
-            http_response_code(500);
-            echo json_encode(["status" => "error", "message" => "Failed to create upload directory"]);
-            exit;
-        }
+        mkdir($uploadDir, 0777, true);
     }
 
-    $fileTmpPath = $_FILES['image']['tmp_name'];
-    $fileName = $_FILES['image']['name'];
-    $fileSize = $_FILES['image']['size'];
-    $fileType = $_FILES['image']['type'];
-    
-    // Get extension
-    $fileNameCmps = explode(".", $fileName);
-    $fileExtension = strtolower(end($fileNameCmps));
+    $fileCount = count($_FILES['media']['name']);
 
-    // Sanitize file name
-    $newFileName = md5(time() . $fileName) . '.' . $fileExtension;
-    
-    // Check if file type is allowed
-    $allowedfileExtensions = array('jpg', 'gif', 'png', 'webp', 'jpeg');
-    if (in_array($fileExtension, $allowedfileExtensions)) {
-        $dest_path = $uploadDir . $newFileName;
-        
-        if(move_uploaded_file($fileTmpPath, $dest_path)) {
-            // Save relative path for DB (path from web root)
-            $imagePath = 'img/products/' . $newFileName;
-        } else {
-             http_response_code(500);
-             echo json_encode(["status" => "error", "message" => "There was an error moving the uploaded file."]);
-             exit;
+    for ($i = 0; $i < $fileCount; $i++) {
+        if ($_FILES['media']['error'][$i] === UPLOAD_ERR_OK) {
+            $fileTmpPath = $_FILES['media']['tmp_name'][$i];
+            $fileName = $_FILES['media']['name'][$i];
+            $fileNameCmps = explode(".", $fileName);
+            $fileExtension = strtolower(end($fileNameCmps));
+            
+            // Generate unique name
+            $newFileName = md5(time() . $fileName . $i) . '.' . $fileExtension;
+            $dest_path = $uploadDir . $newFileName;
+            $db_path = 'img/products/' . $newFileName;
+
+            // Determine type
+            $type = 'document';
+            $allowedImages = ['jpg', 'gif', 'png', 'webp', 'jpeg'];
+            $allowedVideos = ['mp4', 'webm', 'ogg'];
+            $allowedDocs = ['pdf', 'doc', 'docx'];
+
+            if (in_array($fileExtension, $allowedImages)) {
+                $type = 'image';
+            } elseif (in_array($fileExtension, $allowedVideos)) {
+                $type = 'video';
+            } elseif (in_array($fileExtension, $allowedDocs)) {
+                $type = 'document';
+            } else {
+                continue; // Skip unsupported files
+            }
+
+            if(move_uploaded_file($fileTmpPath, $dest_path)) {
+                $uploadedMedia[] = [
+                    'path' => $db_path,
+                    'type' => $type
+                ];
+
+                // Set first image as main image
+                if ($type === 'image' && empty($mainImagePath)) {
+                    $mainImagePath = $db_path;
+                }
+            }
         }
-    } else {
-        http_response_code(400);
-        echo json_encode(["status" => "error", "message" => "Upload failed. Allowed file types: " . implode(',', $allowedfileExtensions)]);
-        exit;
     }
-} else {
-    // If image is required in the form, fail here.
-    // The form has required attribute, so backend should also enforce.
-    http_response_code(400);
-    echo json_encode(["status" => "error", "message" => "Product image is required"]);
-    exit;
 }
 
+// Fallback: If no image found in media[], check legacy 'image' field
+if (empty($mainImagePath) && isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
+    // ... (Legacy single file logic could go here if needed, but we'll rely on the loop above)
+}
+        
 // Insert into DB
 $sql = "INSERT INTO products (name, description, category, price, old_price, image, stock, rating, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 $stmt = $conn->prepare($sql);
@@ -93,14 +103,26 @@ $stmt = $conn->prepare($sql);
 if ($stmt) {
     // Types: s=string, s=string, s=string, d=double, d=double, s=string, i=integer, d=double, s=string, s=string
     // name, description, category, price, old_price, image, stock, rating, created_at, updated_at
-    $stmt->bind_param("sssdssidss", $name, $description, $category, $price, $old_price, $imagePath, $stock, $rating, $created_at, $updated_at);
+    $stmt->bind_param("sssdssidss", $name, $description, $category, $price, $old_price, $mainImagePath, $stock, $rating, $created_at, $updated_at);
     
     if ($stmt->execute()) {
+        $product_id = $conn->insert_id;
+
+        // Insert Media Files
+        if (!empty($uploadedMedia)) {
+            $mediaStmt = $conn->prepare("INSERT INTO product_media (product_id, file_path, file_type) VALUES (?, ?, ?)");
+            foreach ($uploadedMedia as $media) {
+                $mediaStmt->bind_param("iss", $product_id, $media['path'], $media['type']);
+                $mediaStmt->execute();
+            }
+            $mediaStmt->close();
+        }
+
         http_response_code(201);
         echo json_encode([
             "status" => "success",
-            "message" => "Product created successfully",
-            "product_id" => $conn->insert_id
+            "message" => "Product created successfully with " . count($uploadedMedia) . " media files.",
+            "product_id" => $product_id
         ]);
     } else {
         http_response_code(500);

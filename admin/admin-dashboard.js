@@ -40,6 +40,7 @@ document.addEventListener('DOMContentLoaded', function() {
   loadProducts();
   loadOrders();
   loadAnalytics();
+  setupMediaUpload(); // Initialize media upload logic
 });
 
 // Tab Navigation (updated for sidebar)
@@ -209,60 +210,6 @@ async function loadUsers() {
     usersTable.innerHTML = '<tr><td colspan="6" class="empty-state">Error loading users</td></tr>';
   }
 }
-
-// ... existing code ...
-
-// Edit Product Functions
-async function editProduct(productId) {
-  try {
-      // Fetch product details
-      const response = await fetch(`../api/admin/product/get.php?id=${productId}`);
-      const result = await response.json();
-      
-      if (result.status === 'success' && result.data) {
-          const p = result.data;
-          // Populate form
-          const setVal = (id, val) => {
-             const el = document.getElementById(id);
-             if(el) el.value = val;
-          };
-          
-          setVal('edit-product-id', p.id);
-          setVal('edit-product-name', p.name);
-          setVal('edit-product-category', p.category);
-          setVal('edit-product-price', p.price);
-          setVal('edit-product-stock', p.stock || 0);
-          setVal('edit-product-rating', p.rating || 0);
-          setVal('edit-product-description', p.description || '');
-          
-          const previewEl = document.getElementById('current-image-preview');
-          if (previewEl) {
-              if (p.image) {
-                  // Ensure path is correct relative to admin folder
-                  const imagePath = p.image.startsWith('img/') ? '../' + p.image : p.image;
-                  previewEl.innerHTML = `
-                    <div style="display: flex; align-items: center; gap: 10px;">
-                        <img src="${imagePath}" alt="Current Product Image" style="width: 60px; height: 60px; object-fit: cover; border-radius: 4px; border: 1px solid #ddd;">
-                       <span>Current Image (<a href="${imagePath}" target="_blank">View Full</a>)</span>
-                    </div>`;
-              } else {
-                  previewEl.innerHTML = 'No image currently set.';
-              }
-          }
-          
-          openEditProductModal();
-      } else {
-          alert('Failed to fetch product details.');
-      }
-  } catch (e) {
-      console.error(e);
-      alert('Error fetching product details.');
-  }
-}
-
-
-
-
 
 async function fetchUsers(){
   try {
@@ -573,18 +520,28 @@ async function editProduct(productId) {
       if (result.status === 'success' && result.data) {
           const p = result.data;
           // Populate form
-          document.getElementById('edit-product-id').value = p.id;
-          document.getElementById('edit-product-name').value = p.name;
-          document.getElementById('edit-product-category').value = p.category;
-          document.getElementById('edit-product-price').value = p.price;
-          document.getElementById('edit-product-stock').value = p.stock || 0;
-          document.getElementById('edit-product-rating').value = p.rating || 0; 
-          document.getElementById('edit-product-description').value = p.description || '';
+          const setVal = (id, val) => {
+             const el = document.getElementById(id);
+             if(el) el.value = val;
+          };
           
-          if (p.image) {
-              document.getElementById('current-image-preview').innerHTML = `Current: <a href="${p.image}" target="_blank">View Image</a>`;
-          } else {
-              document.getElementById('current-image-preview').innerHTML = 'No image currently set.';
+          setVal('edit-product-id', p.id);
+          setVal('edit-product-name', p.name);
+          setVal('edit-product-category', p.category);
+          setVal('edit-product-price', p.price);
+          setVal('edit-product-old-price', p.old_price || '');
+          setVal('edit-product-stock', p.stock || 0);
+          setVal('edit-product-rating', p.rating || 0);
+          setVal('edit-product-description', p.description || '');
+          
+          const previewEl = document.getElementById('current-image-preview');
+          if (previewEl) {
+              if (p.image) {
+                  const imagePath = p.image.startsWith('img/') ? '../' + p.image : p.image;
+                  previewEl.innerHTML = `<div style="display: flex; align-items: center; gap: 10px;"><img src="${imagePath}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px;"> <span>Current Image</span></div>`;
+              } else {
+                  previewEl.innerHTML = 'No image currently set.';
+              }
           }
           
           openEditProductModal();
@@ -949,6 +906,175 @@ async function toggleUserBlock(userId, btn, currentIsBlocked) {
   }
 }
 
+// ==================== PRODUCT MEDIA & CREATE LOGIC ====================
+
+let selectedProductFiles = [];
+
+function setupMediaUpload() {
+  // This assumes you have a form with id="create-product-form" and input id="product-media-input"
+  const mediaInput = document.getElementById('product-media-input');
+  const dropZone = document.getElementById('media-upload-area');
+
+  if (mediaInput) {
+    // Ensure input allows multiple files
+    mediaInput.setAttribute('multiple', 'multiple');
+    mediaInput.setAttribute('name', 'media[]');
+    mediaInput.addEventListener('change', handleMediaSelect);
+  }
+  
+  // Optional: Drag and drop support
+  if (dropZone && mediaInput) {
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropZone.style.borderColor = 'var(--accent)';
+      dropZone.style.background = 'rgba(111, 75, 255, 0.05)';
+    });
+    
+    dropZone.addEventListener('dragleave', (e) => {
+      e.preventDefault();
+      dropZone.style.borderColor = '';
+      dropZone.style.background = '';
+    });
+    
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.style.borderColor = '';
+      dropZone.style.background = '';
+      handleFiles(e.dataTransfer.files);
+    });
+
+    // Click to upload
+    dropZone.addEventListener('click', (e) => {
+      if (e.target !== mediaInput) {
+        mediaInput.click();
+      }
+    });
+  }
+}
+
+function handleMediaSelect(event) {
+  handleFiles(event.target.files);
+}
+
+function handleFiles(files) {
+  const MAX_SIZE = 15 * 1024 * 1024; // 15MB
+  const ALLOWED_EXTS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'mp4', 'webm', 'ogg', 'pdf', 'doc', 'docx'];
+
+  Array.from(files).forEach(file => {
+    const ext = file.name.split('.').pop().toLowerCase();
+    
+    if (!ALLOWED_EXTS.includes(ext)) {
+      alert(`Skipped "${file.name}": File type not supported.`);
+      return;
+    }
+
+    if (file.size > MAX_SIZE) {
+      alert(`Skipped "${file.name}": File size exceeds 15MB.`);
+      return;
+    }
+
+    // Prevent duplicates based on name and size
+    if (!selectedProductFiles.some(f => f.name === file.name && f.size === file.size)) {
+      selectedProductFiles.push(file);
+    }
+  });
+  updateMediaUI();
+}
+
+function removeFile(index) {
+  selectedProductFiles.splice(index, 1);
+  updateMediaUI();
+}
+
+function updateMediaUI() {
+  const previewContainer = document.getElementById('media-preview-grid');
+  const mediaInput = document.getElementById('product-media-input');
+  
+  if (!previewContainer || !mediaInput) return;
+  
+  // Update the input files property using DataTransfer
+  const dataTransfer = new DataTransfer();
+  selectedProductFiles.forEach(file => dataTransfer.items.add(file));
+  mediaInput.files = dataTransfer.files;
+
+  // Render previews
+  previewContainer.innerHTML = ''; // Clear existing previews
+
+  selectedProductFiles.forEach((file, index) => {
+    const item = document.createElement('div');
+    item.className = 'media-preview-item';
+    
+    const removeBtn = document.createElement('div');
+    removeBtn.className = 'media-remove-btn';
+    removeBtn.innerHTML = '&times;';
+    removeBtn.onclick = (e) => {
+      e.stopPropagation();
+      removeFile(index);
+    };
+
+    let content = '';
+    const objectUrl = URL.createObjectURL(file);
+
+    if (file.type.startsWith('image/')) {
+      content = `<img src="${objectUrl}" alt="Preview">`;
+    } else if (file.type.startsWith('video/')) {
+      content = `<video src="${objectUrl}" controls></video><span class="media-type-badge">Video</span>`;
+    } else {
+      // Document placeholder
+      content = `<div class="media-doc-preview">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+                    <span style="font-size:10px;margin-top:4px;text-align:center;word-break:break-all;">${file.name}</span>
+                   </div>`;
+    }
+    
+    // Add size badge
+    const sizeStr = (file.size / (1024 * 1024)).toFixed(2) + ' MB';
+    content += `<span class="media-size-badge">${sizeStr}</span>`;
+    
+    item.innerHTML = content;
+    item.appendChild(removeBtn);
+    previewContainer.appendChild(item);
+  });
+}
+
+async function handleCreateProduct(event) {
+  event.preventDefault();
+  const form = event.target;
+  const btn = form.querySelector('button[type="submit"]');
+  const originalText = btn.innerText;
+
+  btn.disabled = true;
+  btn.innerText = 'Creating...';
+
+  try {
+    const formData = new FormData(form);
+    
+    const response = await fetch('../api/admin/product/create.php', {
+      method: 'POST',
+      body: formData
+    });
+
+    const result = await response.json();
+
+    if (result.status === 'success') {
+      alert('Product created successfully!');
+      form.reset();
+      selectedProductFiles = []; // Clear file array
+      updateMediaUI(); // Clear UI
+      loadProducts(); // Refresh list
+      loadOverview();
+    } else {
+      alert(result.message || 'Failed to create product');
+    }
+  } catch (error) {
+    console.error('Error creating product:', error);
+    alert('An error occurred');
+  } finally {
+    btn.disabled = false;
+    btn.innerText = originalText;
+  }
+}
+
 // Make functions globally available
 window.handleAdminLogout = handleAdminLogout;
 window.filterUsers = filterUsers;
@@ -965,5 +1091,5 @@ window.closeStatusModal = closeStatusModal;
 window.confirmStatusUpdate = confirmStatusUpdate;
 window.toggleUserBlock = toggleUserBlock;
 window.toggleProductStatus = toggleProductStatus;
-
-
+window.handleMediaSelect = handleMediaSelect;
+window.handleCreateProduct = handleCreateProduct;
