@@ -35,87 +35,94 @@ $available_type = $_POST['available_type'] ?? 'physical';
 $commercial_price = !empty($_POST['commercial_price']) ? $_POST['commercial_price'] : NULL;
 $updated_at = date('Y-m-d H:i:s');
 
-// Handle Image Upload
-$imagePath = null;
-$additional_images_json = null;
-$uploadedImages = [];
-
+// Handle Images
+$new_images = [];
+// 1. Process uploaded files
 if (isset($_FILES['images']) && !empty($_FILES['images']['name'][0])) {
-    // Define upload directory
     $uploadDir = '../../../img/products/';
+    if (!file_exists($uploadDir)) mkdir($uploadDir, 0777, true);
     
-    // Create directory if it doesn't exist
-    if (!file_exists($uploadDir)) {
-        if (!mkdir($uploadDir, 0777, true)) {
-            // Log error but don't fail immediately if we can avoid it? No, fail.
-             http_response_code(500);
-             echo json_encode(["status" => "error", "message" => "Failed to create upload directory"]);
-             exit;
-        }
-    }
-
     $files = $_FILES['images'];
     $allowedfileExtensions = array('jpg', 'gif', 'png', 'webp', 'jpeg');
     $fileCount = count($files['name']);
-
+    
     for ($i = 0; $i < $fileCount; $i++) {
         if ($files['error'][$i] === UPLOAD_ERR_OK) {
-            $fileTmpPath = $files['tmp_name'][$i];
             $fileName = $files['name'][$i];
-            
-            // Get extension
             $fileNameCmps = explode(".", $fileName);
             $fileExtension = strtolower(end($fileNameCmps));
-
-            // Sanitize file name
             $newFileName = md5(time() . $fileName . $i) . '.' . $fileExtension;
             
             if (in_array($fileExtension, $allowedfileExtensions)) {
                 $dest_path = $uploadDir . $newFileName;
-                
-                if(move_uploaded_file($fileTmpPath, $dest_path)) {
-                    // Save relative path for DB
-                    $relativePath = 'img/products/' . $newFileName;
-                    $uploadedImages[] = $relativePath;
-                    
-                    // Set first image as main image if not set (or always if we replacing)
-                    // If we are replacing, the first uploaded image IS the new main image.
-                    if (count($uploadedImages) === 1) {
-                        $imagePath = $relativePath;
-                    }
+                if(move_uploaded_file($files['tmp_name'][$i], $dest_path)) {
+                    $new_images[] = 'img/products/' . $newFileName;
                 }
             }
         }
     }
-    
-    if (!empty($uploadedImages)) {
-        $additional_images_json = json_encode($uploadedImages);
-        // Ensure imagePath is set
-        if (!$imagePath) {
-             $imagePath = $uploadedImages[0];
-        }
-    }
 }
+
+// 2. Process existing images (passed as JSON string)
+$kept_images = [];
+if (isset($_POST['existing_images'])) {
+    $decoded = json_decode($_POST['existing_images'], true);
+    if (is_array($decoded)) {
+        $kept_images = $decoded;
+    }
+} else {
+    // If not set, it might mean we are not using the new frontend logic yet?
+    // Or it means ALL existing images were removed?
+    // Let's assume if it's not set, we don't change existing images UNLESS new images are uploaded (legacy behavior)
+    // BUT, the user wants removal support.
+    // If 'existing_images' param is present (even empty json "[]"), we respect it.
+    // If it is completely missing from POST, maybe we should default to 'fetch current from DB'?
+    // No, frontend sends it.
+}
+
+// Combine: Kept images first, then new images
+// The FINAL list of images for the product
+$final_images = array_merge($kept_images, $new_images);
+
+// Main image is the first one
+$imagePath = !empty($final_images) ? $final_images[0] : ''; // If no images, empty string or null?
+$additional_images_json = !empty($final_images) ? json_encode($final_images) : '[]'; // Store all in additional_json for simplicity?
+// The DB schema usually has 'image' (main) and 'additional_images' (all or extras).
+// Let's stick to the convention: 'image' is primary. 'additional_images' contains ALL (or just extras).
+// Previous logic: 'additional_images' stored ALL including main.
+// So:
+$imagePath = !empty($final_images) ? $final_images[0] : '';
+$additional_images_json = json_encode($final_images);
+
+// Logic:
+// If we have final_images (changed or not), we update the DB fields.
+// If final_images is empty, it means user removed everything?
+
+$update_images = true;
+// Only skip update if we didn't receive 'existing_images' AND didn't upload any new ones (Legacy fallback)
+if (!isset($_POST['existing_images']) && empty($new_images)) {
+    $update_images = false;
+}
+// Actually, if user removes all images, existing_images will be "[]". 
+// So update_images should be true.
 
 // Construct SQL
 $sql = "";
 $types = "";
-// Base params: name, description, category, available_type, price, commercial_price, old_price, stock, rating, related, included, spec, updated
-$params = [$name, $description, $category, $available_type, $price, $commercial_price, $old_price, $stock, $rating, $related_products, $whats_included, $file_specification, $updated_at];
-// Base types: s, s, s, s, d, d, d, i, d, s, s, s, s
-$baseTypes = "ssssdddidssss"; 
+$params = [$name, $description, $category, $available_type, $price, $commercial_price, $old_price, $stock, $rating, $is_featured, $related_products, $whats_included, $file_specification, $updated_at];
+$baseTypes = "ssssdddidissss"; 
 
-if ($imagePath && $additional_images_json) {
+if ($update_images) {
     // Update with images
-    $sql = "UPDATE products SET name=?, description=?, category=?, available_type=?, price=?, commercial_price=?, old_price=?, stock=?, rating=?, related_products=?, whats_included=?, file_specification=?, updated_at=?, image=?, additional_images=? WHERE id=?";
-    $types = $baseTypes . "ssi"; // + image(s), additional_images(s), id(i)
+    $sql = "UPDATE products SET name=?, description=?, category=?, available_type=?, price=?, commercial_price=?, old_price=?, stock=?, rating=?, is_featured=?, related_products=?, whats_included=?, file_specification=?, updated_at=?, image=?, additional_images=? WHERE id=?";
+    $types = $baseTypes . "ssi"; 
     $params[] = $imagePath;
     $params[] = $additional_images_json;
     $params[] = $id;
 } else {
     // Update without changing images
-    $sql = "UPDATE products SET name=?, description=?, category=?, available_type=?, price=?, commercial_price=?, old_price=?, stock=?, rating=?, related_products=?, whats_included=?, file_specification=?, updated_at=? WHERE id=?";
-    $types = $baseTypes . "i"; // + id(i)
+    $sql = "UPDATE products SET name=?, description=?, category=?, available_type=?, price=?, commercial_price=?, old_price=?, stock=?, rating=?, is_featured=?, related_products=?, whats_included=?, file_specification=?, updated_at=? WHERE id=?";
+    $types = $baseTypes . "i";
     $params[] = $id;
 }
 

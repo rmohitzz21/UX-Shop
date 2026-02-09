@@ -531,246 +531,210 @@
   </div>
 
   <script>
-    // Fetch product data on load
-    document.addEventListener('DOMContentLoaded', async function () {
+    /* ------------------------------
+       LOAD PRODUCT DATA
+    --------------------------------*/
+    document.addEventListener('DOMContentLoaded', async () => {
+
       // Auth Check
       const adminSession = JSON.parse(localStorage.getItem('adminSession'));
       if (!adminSession) {
           window.location.href = 'admin-login.php';
           return;
       }
-
+      
       // Theme setup
       const savedTheme = localStorage.getItem('admin-theme') || 'light';
       document.body.setAttribute('data-theme', savedTheme);
 
-      // Get ID from URL
-      const urlParams = new URLSearchParams(window.location.search);
-      const id = urlParams.get('id');
+      const params = new URLSearchParams(window.location.search);
+      const id = params.get('id');
 
       if (!id) {
-        alert('Product ID missing!');
-        window.location.href = 'admin-dashboard.php';
+        alert('Product ID missing');
+        location.href = 'admin-dashboard.php';
         return;
       }
 
       document.getElementById('product-id').value = id;
 
       try {
-        const response = await fetch(`../api/admin/product/get.php?id=${id}`);
-        const result = await response.json();
+        const res = await fetch(`../api/admin/product/get.php?id=${id}`);
+        if (!res.ok) throw new Error('Failed to fetch');
 
-        if (result.status === 'success') {
-          const product = result.data;
-          
-          // Populate fields
-          document.getElementById('product-name').value = product.name;
-          document.getElementById('product-category').value = product.category;
-          document.getElementById('available-type').value = product.available_type || 'physical';
-          document.getElementById('product-description').value = product.description;
-          document.getElementById('product-price').value = product.price;
-          document.getElementById('product-old-price').value = product.old_price || '';
-          document.getElementById('commercial-price').value = product.commercial_price || '';
-          document.getElementById('product-stock').value = product.stock;
-          document.getElementById('product-rating').value = product.rating;
-          
-          document.getElementById('related-products').value = product.related_products || '';
-          document.getElementById('whats-included').value = product.whats_included || '';
-          document.getElementById('file-specification').value = product.file_specification || '';
+        const json = await res.json();
+        if (json.status !== 'success') throw new Error(json.message);
 
-          // Handle images
-          const container = document.getElementById('existing-images-container');
-          const grid = document.getElementById('current-images-grid');
-          
-          let images = [];
-          if (product.additional_images) {
-             try {
-                 images = JSON.parse(product.additional_images);
-             } catch(e) {
-                 images = [];
-             }
-          }
-          
-          // If no additional_images but main image exists
-          if (images.length === 0 && product.image) {
-              images.push(product.image);
-          }
+        const p = json.data;
 
-          if (images.length > 0) {
-              container.style.display = 'block';
-              images.forEach(imgSrc => {
-                  const img = document.createElement('img');
-                  img.src = '../' + imgSrc; // adjust path relative to admin
-                  grid.appendChild(img);
-              });
-          }
-
-        } else {
-          alert('Failed to load product details.');
-          window.location.href = 'admin-dashboard.php';
+        // Fill inputs using getElementById
+        document.getElementById('product-name').value = p.name;
+        document.getElementById('product-category').value = p.category;
+        document.getElementById('available-type').value = p.available_type || 'physical';
+        document.getElementById('product-description').value = p.description;
+        document.getElementById('product-price').value = p.price;
+        document.getElementById('product-old-price').value = p.old_price || '';
+        document.getElementById('commercial-price').value = p.commercial_price || '';
+        document.getElementById('product-stock').value = p.stock;
+        document.getElementById('product-rating').value = p.rating || '';
+        document.getElementById('related-products').value = p.related_products || '';
+        document.getElementById('whats-included').value = p.whats_included || '';
+        document.getElementById('file-specification').value = p.file_specification || '';
+        if (p.is_featured == 1 || p.is_featured === '1') {
+            document.getElementById('product-featured').checked = true;
         }
-      } catch (error) {
-        console.error('Error:', error);
-        alert('Error fetching product data.');
+
+        // Images
+        let images = [];
+        if (p.additional_images) {
+          try { images = JSON.parse(p.additional_images); } catch(e) {}
+        }
+        if (images.length === 0 && p.image) images.push(p.image);
+
+        if (images.length > 0) {
+          document.getElementById('existing-images-container').style.display = 'block';
+          const imageGrid = document.getElementById('current-images-grid');
+          
+          images.forEach((src, index) => {
+            const div = document.createElement('div');
+            div.style.position = 'relative';
+            div.style.display = 'inline-block';
+            div.style.marginRight = '10px';
+            div.style.marginBottom = '10px';
+
+            const img = document.createElement('img');
+            img.src = '../' + src;
+            img.style.width = '100px';
+            img.style.height = '100px';
+            img.style.objectFit = 'cover';
+            img.style.borderRadius = '6px';
+            img.style.border = '1px solid var(--admin-border)';
+            
+            const removeBtn = document.createElement('button');
+            removeBtn.innerHTML = '&times;';
+            removeBtn.style.position = 'absolute';
+            removeBtn.style.top = '-8px';
+            removeBtn.style.right = '-8px';
+            removeBtn.style.background = '#ef4444';
+            removeBtn.style.color = 'white';
+            removeBtn.style.border = 'none';
+            removeBtn.style.borderRadius = '50%';
+            removeBtn.style.width = '24px';
+            removeBtn.style.height = '24px';
+            removeBtn.style.cursor = 'pointer';
+            removeBtn.onclick = function() { 
+                div.remove();
+                // Mark as removed by removing from the 'images' array or simpler:
+                // We will collect remaining images from the DOM on submit.
+                // Or better: keep a state.
+            };
+
+            div.appendChild(img);
+            div.appendChild(removeBtn);
+            // Store original source for retrieval
+            div.dataset.src = src; 
+            imageGrid.appendChild(div);
+          });
+        }
+
+      } catch (err) {
+        alert(err.message);
+        location.href = 'admin-dashboard.php';
       }
     });
 
-    });
-
-    // Managed file selection for EDIT
+    /* ------------------------------
+       IMAGE PREVIEW
+    --------------------------------*/
     let selectedFiles = [];
-    const MAX_IMAGES = 5;
+    // Note: The HTML has onchange="handleFileSelect(event)" inline, but we are adding listener here.
+    // To avoid duplication, we should probably remove the inline handler or stick to one approach.
+    // The user's script adds a listener. Let's stick to the user's script pattern but ensure it works with the HTML.
+    
+    const productImageInput = document.getElementById('product-image');
+    const previewContainer = document.getElementById('file-preview');
 
-    // File upload handling
-    function handleFileSelect(event) {
-      const files = Array.from(event.target.files);
-      const remainingSlots = MAX_IMAGES - selectedFiles.length;
-      
-      if (files.length > remainingSlots) {
-        alert(`You can only upload a maximum of ${MAX_IMAGES} images. You have ${remainingSlots} slots remaining.`);
-        event.target.value = ''; 
-        return;
-      }
-
-      files.forEach(file => {
-          if(!selectedFiles.some(f => f.name === file.name && f.size === file.size)){
-              selectedFiles.push(file);
-          }
-      });
-      
-      updatePreviews();
-      event.target.value = ''; 
-    }
-
-    function removeFile(index) {
-      selectedFiles.splice(index, 1);
-      updatePreviews();
-    }
-
-    function updatePreviews() {
-      const previewContainer = document.getElementById('file-preview');
+    productImageInput.addEventListener('change', e => {
+      selectedFiles = [...e.target.files];
       previewContainer.innerHTML = '';
-      
-      if (selectedFiles.length > 0) {
-        previewContainer.style.display = 'flex';
-        
-        selectedFiles.forEach((file, index) => {
-          const reader = new FileReader();
-          
-          const div = document.createElement('div');
-          div.style.position = 'relative';
-          div.style.display = 'inline-block';
-          div.style.marginRight = '10px';
-          div.style.marginBottom = '10px';
+      selectedFiles.forEach(f => {
+        const img = document.createElement('img');
+        img.src = URL.createObjectURL(f);
+        img.style.width = '100px';
+        img.style.height = '100px';
+        img.style.objectFit = 'cover';
+        img.style.borderRadius = '6px';
+        img.style.marginRight = '10px';
+        img.style.marginBottom = '10px';
+        previewContainer.appendChild(img);
+      });
+    });
 
-          const img = document.createElement('img');
-          img.style.width = '120px';
-          img.style.height = '120px';
-          img.style.objectFit = 'cover';
-          img.style.borderRadius = '8px';
-          img.style.border = '1px solid var(--admin-border)';
-          
-          const removeBtn = document.createElement('button');
-          removeBtn.innerHTML = '&times;';
-          removeBtn.style.position = 'absolute';
-          removeBtn.style.top = '-8px';
-          removeBtn.style.right = '-8px';
-          removeBtn.style.background = '#ef4444';
-          removeBtn.style.color = 'white';
-          removeBtn.style.border = 'none';
-          removeBtn.style.borderRadius = '50%';
-          removeBtn.style.width = '24px';
-          removeBtn.style.height = '24px';
-          removeBtn.style.cursor = 'pointer';
-          removeBtn.style.display = 'flex';
-          removeBtn.style.alignItems = 'center';
-          removeBtn.style.justifyContent = 'center';
-          removeBtn.style.padding = '0';
-          removeBtn.setAttribute('type', 'button');
-          removeBtn.onclick = function() { removeFile(index); };
-
-          reader.onload = function (e) {
-            img.src = e.target.result;
-          };
-          
-          div.appendChild(img);
-          div.appendChild(removeBtn);
-          previewContainer.appendChild(div);
-          
-          reader.readAsDataURL(file);
-        });
-      } else {
-        previewContainer.style.display = 'none';
-      }
-    }
-
-    // Drag and drop handling
-    const fileUploadArea = document.getElementById('file-upload-area');
-    const fileInput = document.getElementById('product-image');
-
-    fileUploadArea.addEventListener('dragover', (e) => {
+    /* ------------------------------
+       UPDATE PRODUCT
+    --------------------------------*/
+    // The form has onsubmit="handleUpdateProduct(event)". We can replace that function or remove the inline handler.
+    // The user script adds an event listener. It's cleaner to remove the inline handler from HTML if we use this.
+    // However, I can just redefine handleUpdateProduct or remove inline from HTML. 
+    // The simplier way is to let the user script take over. But the inline `onsubmit` might conflict.
+    // I will replace the inline `onsubmit` in the HTML with nothing, or just define the function globally if needed.
+    // But the user script adds a listener.
+    
+    document.getElementById('edit-product-form').addEventListener('submit', async e => {
       e.preventDefault();
-      fileUploadArea.classList.add('dragover');
-    });
+      
+      // Basic check
+      const btn = e.target.querySelector('button[type="submit"]');
+      const originalText = btn.innerText;
+      btn.disabled = true;
+      btn.innerText = 'Updating...';
 
-    fileUploadArea.addEventListener('dragleave', () => {
-      fileUploadArea.classList.remove('dragover');
-    });
+      const formData = new FormData(e.target);
+      formData.delete('images[]');
+      selectedFiles.forEach(f => formData.append('images[]', f));
 
-    fileUploadArea.addEventListener('drop', (e) => {
-      e.preventDefault();
-      fileUploadArea.classList.remove('dragover');
-      const files = e.dataTransfer.files;
-      if (files.length > 0) {
-        fileInput.files = files;
-        handleFileSelect({ target: { files: files } });
+      // Collect existing images that haven't been removed
+      const remainingImageDivs = document.getElementById('current-images-grid').children;
+      const remainingImages = [];
+      for(let div of remainingImageDivs) {
+          if(div.dataset.src) {
+              remainingImages.push(div.dataset.src);
+          }
       }
-    });
+      formData.append('existing_images', JSON.stringify(remainingImages));
+      
+      // Also ensure 'featured' is handled if unchecked (checkboxes don't send anything if unchecked)
+      // The update.php expects 'featured' param.
+      // If checked, it sends '1' (value="1"). If not, nothing.
+      // We can manually append it if we want to be explicit, but PHP usually handles isset.
+      // However, my previous PHP code uses `filter_var($_POST['featured'] ?? 0 ...)` so it should work fine if missing.
 
-    // Form submission handler
-    async function handleUpdateProduct(event) {
-      event.preventDefault();
-      
-      const form = event.target;
-      const submitBtn = form.querySelector('button[type="submit"]');
-      const originalBtnText = submitBtn.innerText;
-      
-      // Disable button and show loading state
-      submitBtn.disabled = true;
-      submitBtn.innerText = 'Updating Product...';
-      
       try {
-        const formData = new FormData(form);
-        
-        // Handling images for Edit
-        // If selectedFiles > 0, we append them. The server replaces existing images if new ones are sent.
-        formData.delete('images[]');
-        selectedFiles.forEach(file => {
-            formData.append('images[]', file);
-        });
-
-        const response = await fetch('../api/admin/product/update.php', {
+        const res = await fetch('../api/admin/product/update.php', {
           method: 'POST',
           body: formData
         });
 
-        const result = await response.json();
-
-        if (response.ok && result.status === 'success') {
-          alert('Product updated successfully!');
-          window.location.href = 'admin-dashboard.php';
-        } else {
-          throw new Error(result.message || 'Failed to update product');
+        const json = await res.json();
+        if (!res.ok || json.status !== 'success') {
+          throw new Error(json.message || 'Update failed');
         }
-      } catch (error) {
-        console.error('Error:', error);
-        alert('Error updating product: ' + error.message);
+
+        alert('Product updated successfully');
+        location.href = 'admin-dashboard.php';
+
+      } catch (err) {
+        alert(err.message);
       } finally {
-        // Reset button state
-        submitBtn.disabled = false;
-        submitBtn.innerText = originalBtnText;
+        btn.disabled = false;
+        btn.innerText = originalText;
       }
-    }
+    });
+    
+    // Remove the inline onsubmit behavior if it exists to avoid double submission
+    document.getElementById('edit-product-form').removeAttribute('onsubmit');
+    // Also remove inline onchange for file input
+    document.getElementById('product-image').removeAttribute('onchange');
   </script>
 </body>
 
