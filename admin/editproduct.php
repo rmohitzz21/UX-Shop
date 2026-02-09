@@ -3,13 +3,13 @@
 
 <head>
   <meta charset="UTF-8" />
-  <title>Add Product – UX Pacific Shop</title>
+  <title>Edit Product – UX Pacific Shop</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
     rel="stylesheet" />
   <link rel="stylesheet" href="../style.css" />
   <style>
-    /* ==================== ADD PRODUCT PAGE STYLES ==================== */
+    /* ==================== ADD/EDIT PRODUCT PAGE STYLES ==================== */
 
     :root {
       --admin-bg-light: #f5f7fa;
@@ -180,7 +180,6 @@
       background: var(--admin-bg);
       transition: all 0.2s;
       cursor: pointer;
-      position: relative;
     }
 
     .file-upload-area:hover {
@@ -215,14 +214,27 @@
 
     .file-preview {
       margin-top: 1rem;
-      display: none;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
     }
 
     .file-preview img {
-      max-width: 200px;
-      max-height: 200px;
+      max-width: 150px;
+      max-height: 150px;
       border-radius: 8px;
       border: 1px solid var(--admin-border);
+      object-fit: cover;
+    }
+
+    .existing-images {
+      margin-bottom: 1.5rem;
+    }
+
+    .existing-images h3 {
+      font-size: 1rem;
+      margin-bottom: 0.5rem;
+      color: var(--admin-text);
     }
 
     .form-actions {
@@ -304,92 +316,6 @@
         width: 100%;
       }
     }
-
-    /* Media Preview Grid */
-    .media-preview-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-      gap: 1rem;
-      margin-top: 1rem;
-    }
-
-    .media-preview-item {
-      position: relative;
-      aspect-ratio: 1;
-      border-radius: 8px;
-      overflow: hidden;
-      border: 1px solid var(--admin-border);
-      background: var(--admin-bg);
-    }
-    
-    .media-preview-item:hover .media-remove-btn {
-      opacity: 1;
-      transform: scale(1);
-    }
-
-    .media-preview-item img,
-    .media-preview-item video {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-
-    .media-remove-btn {
-      position: absolute;
-      top: 4px;
-      right: 4px;
-      background: rgba(239, 68, 68, 0.9);
-      color: white;
-      border: none;
-      border-radius: 50%;
-      width: 24px;
-      height: 24px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 14px;
-      z-index: 10;
-      transition: all 0.2s;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-    }
-
-    .media-remove-btn:hover {
-      transform: scale(1.1);
-    }
-
-    .media-type-badge {
-      position: absolute;
-      bottom: 4px;
-      left: 4px;
-      background: rgba(0, 0, 0, 0.6);
-      color: white;
-      font-size: 10px;
-      font-weight: 600;
-      padding: 2px 6px;
-      border-radius: 4px;
-      pointer-events: none;
-    }
-
-    .doc-preview {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100%;
-      color: var(--admin-text);
-      font-size: 0.75rem;
-      text-align: center;
-      padding: 0.5rem;
-      background: var(--admin-bg);
-    }
-    
-    .doc-preview svg {
-      width: 32px;
-      height: 32px;
-      margin-bottom: 0.5rem;
-      opacity: 0.7;
-    }
   </style>
 </head>
 
@@ -397,7 +323,7 @@
   <div class="add-product-container">
     <!-- Page Header -->
     <div class="page-header">
-      <h1>Add New Product</h1>
+      <h1>Edit Product</h1>
       <a href="admin-dashboard.php" class="back-button">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <line x1="19" y1="12" x2="5" y2="12"></line>
@@ -409,7 +335,9 @@
 
     <!-- Form Card -->
     <div class="form-card">
-      <form id="add-product-form" onsubmit="handleAddProduct(event)">
+      <form id="edit-product-form" onsubmit="handleUpdateProduct(event)">
+        <input type="hidden" id="product-id" name="id">
+
         <!-- Basic Information -->
         <div class="form-section">
           <h2 class="form-section-title">Basic Information</h2>
@@ -523,27 +451,34 @@
           </div>
         </div>
 
-        <!-- Product Media -->
+        <!-- Product Image -->
         <div class="form-section">
-          <h2 class="form-section-title">Product Media</h2>
+          <h2 class="form-section-title">Product Images</h2>
+          
+          <div class="existing-images" id="existing-images-container" style="display: none;">
+            <h3>Current Images:</h3>
+            <div class="file-preview" id="current-images-grid">
+              <!-- Existing images loaded here -->
+            </div>
+          </div>
+
           <div class="form-group">
-            <label class="form-label">
-              Upload Media (Images, Videos, Docs)
-              <span class="required">*</span>
+            <label class="form-label" for="product-image">
+              Upload New Images 
             </label>
-            <div class="file-upload-area" id="file-upload-area">
+            <div class="file-upload-area" id="file-upload-area" onclick="document.getElementById('product-image').click()">
               <svg class="file-upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                 <polyline points="17 8 12 3 7 8"></polyline>
                 <line x1="12" y1="3" x2="12" y2="15"></line>
               </svg>
               <p class="file-upload-text">Click to upload or drag and drop</p>
-              <p class="file-upload-hint">PNG, JPG, WEBP up to 5MB (Multiple allowed)</p>
+              <p class="file-upload-hint">PNG, JPG, WEBP up to 5MB (Uploading new images replaces existing ones)</p>
             </div>
             <input type="file" id="product-image" name="images[]" class="form-input" accept="image/*" multiple
               style="display: none;" onchange="handleFileSelect(event)" />
             <div class="file-preview" id="file-preview" style="display: flex; gap: 10px; flex-wrap: wrap;">
-              <!-- Images will be injected here -->
+              <!-- New previews here -->
             </div>
           </div>
         </div>
@@ -567,14 +502,98 @@
         <!-- Form Actions -->
         <div class="form-actions">
           <a href="admin-dashboard.php" class="btn-secondary">Cancel</a>
-          <button type="submit" class="btn-primary">Add Product</button>
+          <button type="submit" class="btn-primary">Update Product</button>
         </div>
       </form>
     </div>
   </div>
 
   <script>
-    // Managed file selection
+    // Fetch product data on load
+    document.addEventListener('DOMContentLoaded', async function () {
+      // Auth Check
+      const adminSession = JSON.parse(localStorage.getItem('adminSession'));
+      if (!adminSession) {
+          window.location.href = 'admin-login.php';
+          return;
+      }
+
+      // Theme setup
+      const savedTheme = localStorage.getItem('admin-theme') || 'light';
+      document.body.setAttribute('data-theme', savedTheme);
+
+      // Get ID from URL
+      const urlParams = new URLSearchParams(window.location.search);
+      const id = urlParams.get('id');
+
+      if (!id) {
+        alert('Product ID missing!');
+        window.location.href = 'admin-dashboard.php';
+        return;
+      }
+
+      document.getElementById('product-id').value = id;
+
+      try {
+        const response = await fetch(`../api/admin/product/get.php?id=${id}`);
+        const result = await response.json();
+
+        if (result.status === 'success') {
+          const product = result.data;
+          
+          // Populate fields
+          document.getElementById('product-name').value = product.name;
+          document.getElementById('product-category').value = product.category;
+          document.getElementById('product-description').value = product.description;
+          document.getElementById('product-price').value = product.price;
+          document.getElementById('product-old-price').value = product.old_price || '';
+          document.getElementById('product-stock').value = product.stock;
+          document.getElementById('product-rating').value = product.rating;
+          
+          document.getElementById('related-products').value = product.related_products || '';
+          document.getElementById('whats-included').value = product.whats_included || '';
+          document.getElementById('file-specification').value = product.file_specification || '';
+
+          // Handle images
+          const container = document.getElementById('existing-images-container');
+          const grid = document.getElementById('current-images-grid');
+          
+          let images = [];
+          if (product.additional_images) {
+             try {
+                 images = JSON.parse(product.additional_images);
+             } catch(e) {
+                 images = [];
+             }
+          }
+          
+          // If no additional_images but main image exists
+          if (images.length === 0 && product.image) {
+              images.push(product.image);
+          }
+
+          if (images.length > 0) {
+              container.style.display = 'block';
+              images.forEach(imgSrc => {
+                  const img = document.createElement('img');
+                  img.src = '../' + imgSrc; // adjust path relative to admin
+                  grid.appendChild(img);
+              });
+          }
+
+        } else {
+          alert('Failed to load product details.');
+          window.location.href = 'admin-dashboard.php';
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        alert('Error fetching product data.');
+      }
+    });
+
+    });
+
+    // Managed file selection for EDIT
     let selectedFiles = [];
     const MAX_IMAGES = 5;
 
@@ -585,19 +604,18 @@
       
       if (files.length > remainingSlots) {
         alert(`You can only upload a maximum of ${MAX_IMAGES} images. You have ${remainingSlots} slots remaining.`);
-        event.target.value = ''; // Reset input
+        event.target.value = ''; 
         return;
       }
 
       files.forEach(file => {
-          // Prevent duplicates by name and size
           if(!selectedFiles.some(f => f.name === file.name && f.size === file.size)){
               selectedFiles.push(file);
           }
       });
       
       updatePreviews();
-      event.target.value = ''; // Reset input to allow selecting same file or more
+      event.target.value = ''; 
     }
 
     function removeFile(index) {
@@ -607,7 +625,7 @@
 
     function updatePreviews() {
       const previewContainer = document.getElementById('file-preview');
-      previewContainer.innerHTML = ''; // Clear previous previews
+      previewContainer.innerHTML = '';
       
       if (selectedFiles.length > 0) {
         previewContainer.style.display = 'flex';
@@ -622,7 +640,6 @@
           div.style.marginBottom = '10px';
 
           const img = document.createElement('img');
-          // img size set in reader.onload
           img.style.width = '120px';
           img.style.height = '120px';
           img.style.objectFit = 'cover';
@@ -644,12 +661,9 @@
           removeBtn.style.display = 'flex';
           removeBtn.style.alignItems = 'center';
           removeBtn.style.justifyContent = 'center';
-          removeBtn.style.fontWeight = 'bold';
           removeBtn.style.padding = '0';
-          removeBtn.setAttribute('type', 'button'); // Prevent submit
-          removeBtn.onclick = function() { 
-              removeFile(index); 
-          };
+          removeBtn.setAttribute('type', 'button');
+          removeBtn.onclick = function() { removeFile(index); };
 
           reader.onload = function (e) {
             img.src = e.target.result;
@@ -668,14 +682,7 @@
 
     // Drag and drop handling
     const fileUploadArea = document.getElementById('file-upload-area');
-    const fileInput = document.getElementById('product-media');
-    const previewGrid = document.getElementById('media-preview-grid');
-
-    // Click to upload
-    fileUploadArea.addEventListener('click', () => fileInput.click());
-
-    // Handle file selection
-    fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
+    const fileInput = document.getElementById('product-image');
 
     fileUploadArea.addEventListener('dragover', (e) => {
       e.preventDefault();
@@ -689,66 +696,15 @@
     fileUploadArea.addEventListener('drop', (e) => {
       e.preventDefault();
       fileUploadArea.classList.remove('dragover');
-      handleFiles(e.dataTransfer.files);
+      const files = e.dataTransfer.files;
+      if (files.length > 0) {
+        fileInput.files = files;
+        handleFileSelect({ target: { files: files } });
+      }
     });
 
-    function handleFiles(files) {
-      const MAX_SIZE = 15 * 1024 * 1024; // 15MB
-      Array.from(files).forEach(file => {
-        if (file.size > MAX_SIZE) {
-          alert(`Skipped "${file.name}": File size exceeds 15MB.`);
-          return;
-        }
-        // Avoid duplicates
-        if (!selectedFiles.some(f => f.name === file.name && f.size === file.size)) {
-          selectedFiles.push(file);
-        }
-      });
-      updateMediaUI();
-    }
-
-    function removeFile(index) {
-      selectedFiles.splice(index, 1);
-      updateMediaUI();
-    }
-
-    function updateMediaUI() {
-      previewGrid.innerHTML = '';
-      
-      selectedFiles.forEach((file, index) => {
-        const item = document.createElement('div');
-        item.className = 'media-preview-item';
-        
-        const removeBtn = document.createElement('div');
-        removeBtn.className = 'media-remove-btn';
-        removeBtn.innerHTML = '&times;';
-        removeBtn.onclick = (e) => { e.stopPropagation(); removeFile(index); };
-        
-        let content = '';
-        const objectUrl = URL.createObjectURL(file);
-        
-        if (file.type.startsWith('image/')) {
-          content = `<img src="${objectUrl}" alt="Preview"><span class="media-type-badge">IMG</span>`;
-        } else if (file.type.startsWith('video/')) {
-          content = `<video src="${objectUrl}" controls></video><span class="media-type-badge">Video</span>`;
-        } else {
-          content = `<div class="doc-preview">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                        <polyline points="14 2 14 8 20 8"></polyline>
-                      </svg>
-                      <span style="word-break: break-all; padding: 0 4px;">${file.name}</span>
-                     </div><span class="media-type-badge">Doc</span>`;
-        }
-        
-        item.innerHTML = content;
-        item.appendChild(removeBtn);
-        previewGrid.appendChild(item);
-      });
-    }
-
     // Form submission handler
-    async function handleAddProduct(event) {
+    async function handleUpdateProduct(event) {
       event.preventDefault();
       
       const form = event.target;
@@ -757,26 +713,19 @@
       
       // Disable button and show loading state
       submitBtn.disabled = true;
-      submitBtn.innerText = 'Adding Product...';
+      submitBtn.innerText = 'Updating Product...';
       
       try {
         const formData = new FormData(form);
         
-        // Manual validation for images
-        if (selectedFiles.length === 0) {
-            alert('Please upload at least one product image.');
-            throw new Error('Image required');
-        }
-        
-        // Remove standard "images[]" entry if it exists (it might be empty from reset)
+        // Handling images for Edit
+        // If selectedFiles > 0, we append them. The server replaces existing images if new ones are sent.
         formData.delete('images[]');
-        
-        // Append managed files
         selectedFiles.forEach(file => {
             formData.append('images[]', file);
         });
-        
-        const response = await fetch('../api/admin/product/create.php', {
+
+        const response = await fetch('../api/admin/product/update.php', {
           method: 'POST',
           body: formData
         });
@@ -784,39 +733,20 @@
         const result = await response.json();
 
         if (response.ok && result.status === 'success') {
-          alert('Product added successfully!');
-          form.reset();
-          selectedFiles = []; // Reset managed files
-          updatePreviews(); // Clear UI
-          // redirect to dashboard or products list if needed
-          // window.location.href = 'admin-dashboard.php';
+          alert('Product updated successfully!');
+          window.location.href = 'admin-dashboard.php';
         } else {
-          throw new Error(result.message || 'Failed to add product');
+          throw new Error(result.message || 'Failed to update product');
         }
       } catch (error) {
         console.error('Error:', error);
-        alert('Error adding product: ' + error.message);
+        alert('Error updating product: ' + error.message);
       } finally {
         // Reset button state
         submitBtn.disabled = false;
         submitBtn.innerText = originalBtnText;
       }
     }
-
-    // Theme toggle (if needed)
-    function toggleTheme() {
-      const body = document.body;
-      const currentTheme = body.getAttribute('data-theme');
-      const newTheme = currentTheme === 'light' ? 'dark' : 'light';
-      body.setAttribute('data-theme', newTheme);
-      localStorage.setItem('admin-theme', newTheme);
-    }
-
-    // Load saved theme
-    document.addEventListener('DOMContentLoaded', function () {
-      const savedTheme = localStorage.getItem('admin-theme') || 'light';
-      document.body.setAttribute('data-theme', savedTheme);
-    });
   </script>
 </body>
 

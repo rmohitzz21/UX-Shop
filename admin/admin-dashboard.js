@@ -211,6 +211,18 @@ async function loadUsers() {
   }
 }
 
+// ... existing code ...
+
+// Edit Product Functions
+// Edit Product Functions
+function editProduct(productId) {
+  window.location.href = `editproduct.php?id=${productId}`;
+}
+
+
+
+
+
 async function fetchUsers(){
   try {
     const response = await fetch('../api/admin/user/list.php');
@@ -511,47 +523,9 @@ function filterOrders() {
 
 // Action Functions
 // Edit Product Functions
-async function editProduct(productId) {
-  try {
-      // Fetch product details
-      const response = await fetch(`../api/admin/product/get.php?id=${productId}`);
-      const result = await response.json();
-      
-      if (result.status === 'success' && result.data) {
-          const p = result.data;
-          // Populate form
-          const setVal = (id, val) => {
-             const el = document.getElementById(id);
-             if(el) el.value = val;
-          };
-          
-          setVal('edit-product-id', p.id);
-          setVal('edit-product-name', p.name);
-          setVal('edit-product-category', p.category);
-          setVal('edit-product-price', p.price);
-          setVal('edit-product-old-price', p.old_price || '');
-          setVal('edit-product-stock', p.stock || 0);
-          setVal('edit-product-rating', p.rating || 0);
-          setVal('edit-product-description', p.description || '');
-          
-          const previewEl = document.getElementById('current-image-preview');
-          if (previewEl) {
-              if (p.image) {
-                  const imagePath = p.image.startsWith('img/') ? '../' + p.image : p.image;
-                  previewEl.innerHTML = `<div style="display: flex; align-items: center; gap: 10px;"><img src="${imagePath}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px;"> <span>Current Image</span></div>`;
-              } else {
-                  previewEl.innerHTML = 'No image currently set.';
-              }
-          }
-          
-          openEditProductModal();
-      } else {
-          alert('Failed to fetch product details.');
-      }
-  } catch (e) {
-      console.error(e);
-      alert('Error fetching product details.');
-  }
+// Edit Product Functions
+function editProduct(productId) {
+  window.location.href = `editproduct.php?id=${productId}`;
 }
 
 function openEditProductModal() {
