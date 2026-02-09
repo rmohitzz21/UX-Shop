@@ -433,208 +433,68 @@
         <div class="glass-card-frame"></div>
 
         <!-- Product grid -->
+        <!-- Product grid -->
         <div class="product-grid">
-          <!-- 1 product example – duplicate / customize as needed -->
-          <article class="product-card" data-category="stickers">
-            <div class="product-img">
-              <img src="img/sticker.webp" alt="Designer Sticker Pack" />
-              <span class="product-tag">Stickers</span>
-            </div>
-            <div class="product-body">
-              <h3>Designer Sticker Pack</h3>
-              <p>
-                A fun set of UX, UI, and product stickers for laptops,
-                notebooks, and desk decor.
-              </p>
-              <p>Size : A5 / A4 printable</p>
-              <div class="product-meta">
-                <div class="product-price">$349 <span>$899</span></div>
-                <div class="product-rating">★ 4.8</div>
-              </div>
-              <div class="product-actions">
-                <button onclick="addToCart('sticker-pack-001')" class="btn-primary small"
-                  aria-label="Add Designer Sticker Pack to cart">Add to Cart</button>
-                <a href="product.php" class="btn-ghost small">View Details</a>
-              </div>
-            </div>
-          </article>
+          <?php
+          // Include config if not already included
+          if (!isset($conn)) {
+              require_once 'includes/config.php';
+          }
 
-          <article class="product-card" data-category="stickers">
-            <div class="product-img">
-              <img src="img/white.webp" alt="UXPacific Classic Hoodie" />
-              <span class="product-tag">T-Shirts</span>
-            </div>
-            <div class="product-body">
-              <h3>UXPacific Classic T-Shirt</h3>
-              <p>
-                Premium cotton-blend T-Shirt with understated branding &
-                minimalist front print.
-              </p>
-              <p>Size : S / M / L / Xl</p>
-              <div class="product-meta">
-                <div class="product-price">$349 <span>$899</span></div>
-                <div class="product-rating">★ 4.7</div>
-              </div>
-              <div class="product-actions">
-                <button onclick="addToCart('tshirt-001')" class="btn-primary small" aria-label="Add to cart">Add to
-                  Cart</button>
-                <a href="product.php" class="btn-ghost small">View Details</a>
-              </div>
-            </div>
-          </article>
+          // Fetch latest 8 active products
+          $sql = "SELECT * FROM products WHERE is_active = 1 ORDER BY created_at DESC LIMIT 8";
+          $result = $conn->query($sql);
 
-          <article class="product-card" data-category="stickers">
-            <div class="product-img">
-              <img src="img/tule.webp" alt="UXPacific Classic Hoodie" />
-              <span class="product-tag">T-Shirts</span>
-            </div>
-            <div class="product-body">
-              <h3>UXPacific Classic T-Shirt</h3>
-              <p>
-                Premium cotton-blend T-Shirt with understated branding &
-                minimalist front print.
-              </p>
-              <p>Size : S / M / L / Xl</p>
-              <div class="product-meta">
-                <div class="product-price">$349 <span>$899</span></div>
-                <div class="product-rating">★ 4.7</div>
-              </div>
-              <div class="product-actions">
-                <button onclick="addToCart('tshirt-001')" class="btn-primary small" aria-label="Add to cart">Add to
-                  Cart</button>
-                <a href="product.php" class="btn-ghost small">View Details</a>
-              </div>
-            </div>
-          </article>
+          if ($result && $result->num_rows > 0) {
+              while($row = $result->fetch_assoc()) {
+                  $id = $row['id'];
+                  $name = htmlspecialchars($row['name']);
+                  $jsName = addslashes($row['name']);
+                  $jsImage = addslashes($row['image']);
+                  $jsCategory = addslashes($row['category']);
+                  
+                  $price = number_format($row['price'], 2);
+                  $old_price = !empty($row['old_price']) ? number_format($row['old_price'], 2) : '';
+                  $image = htmlspecialchars($row['image']);
+                  $category = htmlspecialchars($row['category']);
+                  $rating = $row['rating'] ?: '0.0';
+                  
+                  // Truncate description
+                  $description = htmlspecialchars($row['description']);
+                  if (strlen($description) > 100) {
+                      $description = substr($description, 0, 100) . '...';
+                  }
+                  
+                  // File Spec or "Size" equivalent
+                  $spec = !empty($row['file_specification']) ? htmlspecialchars($row['file_specification']) : '';
+                  $specHtml = $spec ? "<p style='font-size: 0.85rem; color: #666; margin-bottom: 0.5rem;'>Spec: $spec</p>" : "";
 
-          <article class="product-card">
-            <div class="product-img">
-              <img src="img/bk.webp" alt="UXPacific Booklet" />
-              <span class="product-tag">Booklet</span>
-            </div>
-            <div class="product-body">
-              <h3>UXPacific Booklet</h3>
-              <p>
-                A curated booklet template to showcase your UX case studies
-                and portfolio projects.
-              </p>
-              <p>Size : A4 / Digital PDF</p>
-              <div class="product-meta">
-                <div class="product-price">$349 <span>$899</span></div>
-                <div class="product-rating">★ 4.6</div>
-              </div>
-              <div class="product-actions">
-                <button onclick="addToCart('tshirt-001')" class="btn-primary small" aria-label="Add to cart">Add to
-                  Cart</button>
-                <a href="product.php" class="btn-ghost small">View Details</a>
-              </div>
-            </div>
-          </article>
-
-          <article class="product-card">
-            <div class="product-img">
-              <img src="img/mockup.webp" alt="UXPacific Mockup" />
-              <span class="product-tag">Mockup</span>
-            </div>
-            <div class="product-body">
-              <h3>UXPacific Mockup</h3>
-              <p>
-                A detailed, responsive mockup template for presenting digital
-                product designs.
-              </p>
-              <p>Size : High-Resolution PNG / PSD</p>
-              <div class="product-meta">
-                <div class="product-price">$349 <span>$899</span></div>
-                <div class="product-rating">★ 4.5</div>
-              </div>
-              <div class="product-actions">
-                <button onclick="addToCart('tshirt-001')" class="btn-primary small" aria-label="Add to cart">Add to
-                  Cart</button>
-                <a href="product.php" class="btn-ghost small">View Details</a>
-              </div>
-            </div>
-          </article>
-
-          <article class="product-card">
-            <div class="product-img">
-              <img src="img/b11.webp" alt="UXPacific Mockup" />
-              <span class="product-tag">Badge Pack</span>
-            </div>
-            <div class="product-body">
-              <h3>UXPacific Badge Pack</h3>
-              <p>
-                A clean badge pack designed for communities, profiles, and
-                achievements.
-              </p>
-              <p>Size : PNG / SVG / 1024px</p>
-
-              <div class="product-meta">
-                <div class="product-price">$349 <span>$899</span></div>
-                <div class="product-rating">★ 4.5</div>
-              </div>
-              <div class="product-actions">
-                <button onclick="addToCart('tshirt-001')" class="btn-primary small" aria-label="Add to cart">Add to
-                  Cart</button>
-                <a href="product.php" class="btn-ghost small">View Details</a>
-              </div>
-            </div>
-          </article>
-
-          <article class="product-card">
-            <div class="product-img">
-              <img src="img/template.webp" alt="UXPacific Mockup" />
-              <span class="product-tag">Template</span>
-            </div>
-            <div class="product-body">
-              <h3>UXPacific UI Template</h3>
-              <p>
-                A detailed, responsive mockup template for presenting digital
-                product designs.
-              </p>
-              <p>Size : Figma / Auto-Layout-Ready</p>
-              <div class="product-meta">
-                <div class="product-price">$349 <span>$899</span></div>
-                <div class="product-rating">★ 4.5</div>
-              </div>
-              <div class="product-actions">
-                <button onclick="addToCart('tshirt-001')" class="btn-primary small" aria-label="Add to cart">Add to
-                  Cart</button>
-                <a href="product.php" class="btn-ghost small">View Details</a>
-              </div>
-            </div>
-          </article>
-
-          <article class="product-card">
-            <div class="product-img">
-              <img src="img/workbk.webp" alt="UXPacific Mockup" />
-              <span class="product-tag">Workbook</span>
-            </div>
-            <div class="product-body">
-              <h3>UXPacific Mockup</h3>
-              <p>
-                A detailed, responsive mockup template for presenting digital
-                product designs.
-              </p>
-              <p>Size : A4 / Digital PDF</p>
-              <div class="product-meta">
-                <div class="product-price">$349 <span>$899</span></div>
-                <div class="product-rating">★ 4.5</div>
-              </div>
-              <div class="product-actions">
-                <button onclick="addToCart('tshirt-001')" class="btn-primary small" aria-label="Add to cart">Add to
-                  Cart</button>
-                <a href="product.php" class="btn-ghost small">View Details</a>
-              </div>
-            </div>
-          </article>
-
-          <!-- <article>
-              <a href="shopAll.php" class="">
-                <img src="img/arrow.webp" class="shop-image" alt="View all products arrow" />
-              </a>
-            </article> -->
-
-          <!-- Add more cards as needed to fill the grid -->
+                  echo "
+                  <article class='product-card' data-category='$category'>
+                    <div class='product-img'>
+                      <img src='$image' alt='$name' onerror=\"this.src='img/sticker.webp'\" />
+                      <span class='product-tag'>$category</span>
+                    </div>
+                    <div class='product-body'>
+                      <h3>$name</h3>
+                      <p style='margin-bottom: 0.5rem; font-size: 0.95rem;'>$description</p>
+                      $specHtml
+                      <div class='product-meta'>
+                        <div class='product-price'>$$price " . ($old_price ? "<span>$$old_price</span>" : "") . "</div>
+                        <div class='product-rating'>★ $rating</div>
+                      </div>
+                      <div class='product-actions'>
+                        <button onclick=\"addToCart('$id', null, 1, {name: '$jsName', price: " . $row['price'] . ", image: '$jsImage', category: '$jsCategory'})\" class='btn-primary small' aria-label='Add to cart'>Add to Cart</button>
+                        <a href='product.php?id=$id' class='btn-ghost small'>View Details</a>
+                      </div>
+                    </div>
+                  </article>
+                  ";
+              }
+          } else {
+              echo "<p style='grid-column: 1/-1; text-align: center; padding: 2rem;'>No products launched yet. Check back soon!</p>";
+          }
+          ?>
         </div>
 
         <!-- View All Products Button -->
