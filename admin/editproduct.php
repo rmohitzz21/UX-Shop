@@ -591,8 +591,6 @@
       }
     });
 
-    });
-
     // Managed file selection for EDIT
     let selectedFiles = [];
     const MAX_IMAGES = 5;
