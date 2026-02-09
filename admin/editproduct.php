@@ -368,6 +368,19 @@
               </select>
             </div>
 
+            <div class="form-group">
+              <label class="form-label" for="available-type">
+                Format
+                <span class="required">*</span>
+              </label>
+              <select id="available-type" name="available_type" class="form-select" required>
+                <option value="physical">Physical Product Only</option>
+                <option value="digital">Digital Product Only</option>
+                <option value="both">Both (User Chooses)</option>
+              </select>
+              <p class="form-help-text">For Workbooks/Booklets, select "Both" to let user choose.</p>
+            </div>
+
             <div class="form-group full-width">
               <label class="form-label" for="product-description">
                 Description
@@ -428,6 +441,15 @@
               <input type="number" id="product-old-price" name="old_price" class="form-input" step="0.01" min="0"
                 placeholder="0.00" />
               <p class="form-help-text">Enter the original price to show discount.</p>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="commercial-price">
+                 Commercial License Price
+              </label>
+              <input type="number" id="commercial-price" name="commercial_price" class="form-input" step="0.01" min="0"
+                placeholder="0.00" />
+              <p class="form-help-text">Leave blank to use base price + 40% default.</p>
             </div>
 
             <div class="form-group">
@@ -544,9 +566,11 @@
           // Populate fields
           document.getElementById('product-name').value = product.name;
           document.getElementById('product-category').value = product.category;
+          document.getElementById('available-type').value = product.available_type || 'physical';
           document.getElementById('product-description').value = product.description;
           document.getElementById('product-price').value = product.price;
           document.getElementById('product-old-price').value = product.old_price || '';
+          document.getElementById('commercial-price').value = product.commercial_price || '';
           document.getElementById('product-stock').value = product.stock;
           document.getElementById('product-rating').value = product.rating;
           
@@ -589,6 +613,8 @@
         console.error('Error:', error);
         alert('Error fetching product data.');
       }
+    });
+
     });
 
     // Managed file selection for EDIT

@@ -4,7 +4,6 @@ header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: POST');
 
 // Include database configuration
-// Path: root/api/admin/product/create.php -> ../../../includes/config.php
 require_once '../../../includes/config.php';
 
 // Check request method
@@ -14,7 +13,6 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-// Get form data
 // Get form data
 $name = $_POST['name'] ?? '';
 $category = $_POST['category'] ?? '';
@@ -26,7 +24,8 @@ $rating = $_POST['rating'] ?? 0;
 $related_products = $_POST['related_products'] ?? '';
 $whats_included = $_POST['whats_included'] ?? '';
 $file_specification = $_POST['file_specification'] ?? '';
-// $featured = isset($_POST['featured']) ? 1 : 0;
+$available_type = $_POST['available_type'] ?? 'physical'; // physical, digital, both
+$commercial_price = !empty($_POST['commercial_price']) ? $_POST['commercial_price'] : NULL;
 $created_at = date('Y-m-d H:i:s');
 $updated_at = date('Y-m-d H:i:s');      
 
@@ -100,30 +99,44 @@ if (isset($_FILES['images']) && !empty($_FILES['images']['name'][0])) {
     exit;
 }
 
-// Serialize additional images (all uploaded images)
+// Serialize additional images (all uploaded images including main one or just extras? Usually all for gallery)
 $additional_images = json_encode($uploadedImages);
 
 // Insert into DB
-$sql = "INSERT INTO products (name, description, category, price, old_price, image, stock, rating, related_products, whats_included, file_specification, additional_images, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+$sql = "INSERT INTO products (name, description, category, available_type, price, commercial_price, old_price, image, stock, rating, related_products, whats_included, file_specification, additional_images, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 $stmt = $conn->prepare($sql);
 
 if ($stmt) {
     // Types: s=string, d=double, i=int
-    // name(s), description(s), category(s), price(d), old_price(d), image(s), stock(i), rating(d), related(s), included(s), spec(s), add_imgs(s), created(s), updated(s)
-    $stmt->bind_param("sssdssidssssss", $name, $description, $category, $price, $old_price, $imagePath, $stock, $rating, $related_products, $whats_included, $file_specification, $additional_images, $created_at, $updated_at);
+    // s - name
+    // s - description
+    // s - category
+    // s - available_type
+    // d - price
+    // d - commercial_price
+    // s - old_price (Assuming string for NULL/OldPrice logic, or 'd' if we force float. Let's use 's' to be safe with NULL if bind_param is strict, but usually 'd' works. Previous code used 's' for old_price in one place and 'd' in another. Let's check update.php. Update used 'd'. Let's use 'd' here but ensure it handles NULL if we pass NULL. bind_param with 'd' treats NULL as 0.0 usually? No, it allows NULL if variable is NULL. Let's use 'd' for prices.)
+    // Wait, create.php had "ssssddssidssssss" -> 6th is commercial_price (d), 7th is old_price (s).
+    // Let's stick to 's' for old_price if that's what was working, or change to 'd'. 
+    // Usually prices are decimals. Let's use 'd'.
+    // ssssddd...
+    // name, desc, cat, type -> ssss
+    // price, comm_price, old_price -> ddd
+    // image -> s
+    // stock -> i
+    // rating -> d
+    // related -> s
+    // included -> s
+    // spec -> s
+    // add_images -> s
+    // created -> s
+    // updated -> s
+    
+    // Total: ssssdddsidssssss -> 16 chars.
+    
+    $stmt->bind_param("ssssdddsidssssss", $name, $description, $category, $available_type, $price, $commercial_price, $old_price, $imagePath, $stock, $rating, $related_products, $whats_included, $file_specification, $additional_images, $created_at, $updated_at);
     
     if ($stmt->execute()) {
         $product_id = $conn->insert_id;
-
-        // Insert Media Files
-        if (!empty($uploadedMedia)) {
-            $mediaStmt = $conn->prepare("INSERT INTO product_media (product_id, file_path, file_type) VALUES (?, ?, ?)");
-            foreach ($uploadedMedia as $media) {
-                $mediaStmt->bind_param("iss", $product_id, $media['path'], $media['type']);
-                $mediaStmt->execute();
-            }
-            $mediaStmt->close();
-        }
 
         http_response_code(201);
         echo json_encode([

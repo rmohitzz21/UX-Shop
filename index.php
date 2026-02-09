@@ -466,8 +466,8 @@
                   }
                   
                   // File Spec or "Size" equivalent
-                  $spec = !empty($row['file_specification']) ? htmlspecialchars($row['file_specification']) : '';
-                  $specHtml = $spec ? "<p style='font-size: 0.85rem; color: #666; margin-bottom: 0.5rem;'>Spec: $spec</p>" : "";
+                  // $spec = !empty($row['file_specification']) ? htmlspecialchars($row['file_specification']) : '';
+                  // $specHtml = $spec ? "<p style='font-size: 0.85rem; color: #666; margin-bottom: 0.5rem;'>Spec: $spec</p>" : "";
 
                   echo "
                   <article class='product-card' data-category='$category'>

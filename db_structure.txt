@@ -1,0 +1,25 @@
+Structure for table 'products':
+id | int(11)
+name | varchar(255)
+description | text
+category | varchar(100)
+product_type | enum('physical','digital')
+price | decimal(10,2)
+old_price | decimal(10,2)
+image | varchar(255)
+stock | int(11)
+rating | decimal(3,2)
+created_at | timestamp
+updated_at | timestamp
+is_active | tinyint(1)
+related_products | text
+whats_included | text
+file_specification | text
+additional_images | text
+---------------------------------
+Structure for table 'product_images':
+Table 'product_images' does not exist.
+---------------------------------
+Structure for table 'product_variants':
+Table 'product_variants' does not exist.
+---------------------------------

@@ -541,54 +541,7 @@ document.querySelectorAll(".sizes button").forEach(btn => {
     });
   });
 
-// Image Slider for Product Page
-(function() {
-  const mainImage = document.getElementById("mainProductImage");
-  const slideCount = document.getElementById("slideCount");
-  const dotsContainer = document.getElementById("sliderDots");
-  
-  // Only run if we're on the product page
-  if (!mainImage || !dotsContainer) return;
-  
-  const images = ["img/t1.webp", "img/t2.webp", "img/t3.webp", "img/t4.webp"];
-  const thumbs = document.querySelectorAll(".thumb");
-  let currentIndex = 0; // Start with first image (matches active thumbnail)
-  
-  // Create dots
-  images.forEach((_, i) => {
-    const dot = document.createElement("span");
-    dot.onclick = () => setImage(i);
-    dotsContainer.appendChild(dot);
-  });
-  const dots = dotsContainer.querySelectorAll("span");
 
-  function updateSlider() {
-    mainImage.src = images[currentIndex];
-    slideCount.textContent = `${currentIndex + 1} / ${images.length}`;
-    thumbs.forEach((t, i) =>
-      t.classList.toggle("active", i === currentIndex)
-    );
-    dots.forEach((d, i) =>
-      d.classList.toggle("active", i === currentIndex)
-    );
-  }
-  
-  window.setImage = function(i) {
-    currentIndex = i;
-    updateSlider();
-  };
-  
-  window.changeImage = function(s) {
-    currentIndex = (currentIndex + s + images.length) % images.length;
-    updateSlider();
-  };
-  
-  updateSlider();
-})();
-
-// ==================== CART FUNCTIONALITY ====================
-
-// Cart storage (localStorage for now, will sync with backend later)
 let cart = JSON.parse(localStorage.getItem('cart')) || [];
 
 // Product database (temporary - replace with API call later)
@@ -605,7 +558,7 @@ const products = {
 // Add to cart
 // Add to cart
 // Add to cart
-function addToCart(productId, size = null, quantity = 1, explicitDetails = null) {
+function addToCart(productId, size = null, quantity = 1, explicitDetails = null, productFormat = null) {
   // If explicitDetails are provided (e.g. from shop page), use them for immediate feedback.
   // Otherwise, default to placeholders. The cart page will fetch fresh data from API using ID.
   
@@ -617,17 +570,15 @@ function addToCart(productId, size = null, quantity = 1, explicitDetails = null)
      description: (explicitDetails && explicitDetails.description) ? explicitDetails.description : ''
   };
 
-  // Get product_type from localStorage (set on product page)
-  const product_type = localStorage.getItem('product_type') || 'physical';
+  // Get product_type priority: Argument > localStorage > default
+  const product_type = productFormat || localStorage.getItem('product_type') || 'physical';
   
   const existingIndex = cart.findIndex(
-    item => item.id === productId && item.size === size
+    item => item.id === productId && item.size === size && item.product_type === product_type
   );
   
   if (existingIndex > -1) {
     cart[existingIndex].quantity += quantity;
-    // Update product_type if changed
-    cart[existingIndex].product_type = product_type;
   } else {
     cart.push({
       id: productId,
@@ -777,7 +728,11 @@ async function loadCartPage() {
           <div class="cart-item-details">
             <h3 class="cart-item-title">${name}</h3>
             <p class="cart-item-desc" style="font-size: 0.85rem; color: #777; margin-bottom: 4px;">${description || ''}</p>
-            <p class="cart-item-meta">${item.size ? `Size: ${item.size} • ` : ''}Quantity: ${item.quantity}</p>
+            <p class="cart-item-meta">
+              ${item.product_type ? `Format: <span style="text-transform:capitalize">${item.product_type}</span> • ` : ''}
+              ${item.size ? `Size: ${item.size} • ` : ''}
+              Quantity: ${item.quantity}
+            </p>
             <p class="cart-item-price">$${itemTotal.toLocaleString()}</p>
           </div>
           <div class="cart-item-actions">

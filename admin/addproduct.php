@@ -353,6 +353,19 @@
               </select>
             </div>
 
+            <div class="form-group">
+              <label class="form-label" for="available-type">
+                Format
+                <span class="required">*</span>
+              </label>
+              <select id="available-type" name="available_type" class="form-select" required>
+                <option value="physical">Physical Product Only</option>
+                <option value="digital">Digital Product Only</option>
+                <option value="both">Both (User Chooses)</option>
+              </select>
+              <p class="form-help-text">For Workbooks/Booklets, select "Both" to let user choose.</p>
+            </div>
+
             <div class="form-group full-width">
               <label class="form-label" for="product-description">
                 Description
@@ -413,6 +426,15 @@
               <input type="number" id="product-old-price" name="old_price" class="form-input" step="0.01" min="0"
                 placeholder="0.00" />
               <p class="form-help-text">Enter the original price to show discount.</p>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="commercial-price">
+                Commercial License Price (Digital)
+              </label>
+              <input type="number" id="commercial-price" name="commercial_price" class="form-input" step="0.01" min="0"
+                placeholder="0.00" />
+              <p class="form-help-text">Leave blank to use base price + 40% default.</p>
             </div>
 
             <div class="form-group">

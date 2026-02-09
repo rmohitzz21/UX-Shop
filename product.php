@@ -1,11 +1,147 @@
+<?php
+require_once 'includes/config.php';
+
+// Get product ID
+$product_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
+
+// Fetch product details
+// We also fetch available_type column
+$stmt = $conn->prepare("SELECT * FROM products WHERE id = ? AND is_active = 1");
+$stmt->bind_param("i", $product_id);
+$stmt->execute();
+$result = $stmt->get_result();
+$product = $result->fetch_assoc();
+
+if (!$product) {
+    // Redirect to shop if product not found or inactive
+    header("Location: shopAll.php");
+    exit;
+}
+
+// Prepare Data
+$name = htmlspecialchars($product['name']);
+$description = htmlspecialchars($product['description']);
+$price = number_format($product['price'], 2);
+$commercial_price_val = !empty($product['commercial_price']) ? $product['commercial_price'] : ($product['price'] * 1.4);
+$commercial_price = number_format($commercial_price_val, 2);
+$old_price = !empty($product['old_price']) ? number_format($product['old_price'], 2) : '';
+$rating = $product['rating'] ?: '0.0';
+$stock = $product['stock'];
+$category = htmlspecialchars($product['category']);
+$available_type = $product['available_type'] ?? 'physical'; // physical, digital, both
+
+// Handle Images
+$images = [];
+
+// 1. Main Image from 'image' column (Priority 1)
+if (!empty($product['image'])) {
+    $images[] = $product['image'];
+}
+
+// 2. Additional Images from 'additional_images' column
+if (!empty($product['additional_images'])) {
+    $add_imgs = json_decode($product['additional_images'], true);
+    
+    // Validate JSON decode
+    if (json_last_error() === JSON_ERROR_NONE && is_array($add_imgs)) {
+        foreach ($add_imgs as $img) {
+            // Avoid duplicates of the main image or within additional images
+            if (!in_array($img, $images)) {
+                $images[] = $img;
+            }
+        }
+    }
+}
+
+// 3. Fallback if no images found at all
+if (empty($images)) {
+    $images[] = 'img/sticker.webp';
+}
+
+// Ensure $images is indexed 0, 1, 2...
+$images = array_values($images);
+
+// Handle Tabs Data
+$whats_included = !empty($product['whats_included']) ? nl2br(htmlspecialchars($product['whats_included'])) : '<li>No details available.</li>';
+$file_specs = !empty($product['file_specification']) ? nl2br(htmlspecialchars($product['file_specification'])) : '<li>No specifications available.</li>';
+
+// Fetch Related Products
+$related_html = '';
+// Function to fetch related products
+function getRelatedProducts($conn, $product) {
+    $related_html = '';
+    $ids_str = '';
+
+    // 1. Try manual related products
+    if (!empty($product['related_products'])) {
+        $related_ids = array_map('intval', explode(',', $product['related_products']));
+        $ids_str = implode(',', $related_ids);
+    } 
+    
+    // 2. If no manual related products, find by category
+    if (empty($ids_str)) {
+         $cat = $conn->real_escape_string($product['category']);
+         $pid = (int)$product['id'];
+         $rel_sql = "SELECT id FROM products WHERE category = '$cat' AND id != $pid AND is_active = 1 LIMIT 4";
+         $rel_res = $conn->query($rel_sql);
+         $ids = [];
+         while($r = $rel_res->fetch_assoc()){ $ids[] = $r['id']; }
+         if(!empty($ids)){
+             $ids_str = implode(',', $ids);
+         }
+    }
+
+    // Safety check for empty list
+    if (!empty($ids_str)) {
+        $rel_sql = "SELECT * FROM products WHERE id IN ($ids_str) AND is_active = 1 LIMIT 4";
+        $rel_res = $conn->query($rel_sql);
+        
+        if ($rel_res && $rel_res->num_rows > 0) {
+            while ($rel = $rel_res->fetch_assoc()) {
+                $r_id = $rel['id'];
+                $r_name = htmlspecialchars($rel['name']);
+                $r_price = number_format($rel['price'], 2);
+                $r_old = !empty($rel['old_price']) ? number_format($rel['old_price'], 2) : '';
+                $r_img = !empty($rel['image']) ? $rel['image'] : 'img/sticker.webp';
+                $r_rating = $rel['rating'] ?: '0.0';
+                $r_desc = substr(htmlspecialchars($rel['description']), 0, 80) . '...';
+                
+                // JS Safe strings
+                $jsRName = addslashes($rel['name']);
+                
+                $related_html .= "
+                <div class='related-card'>
+                  <div class='card-img'>
+                    <a href='product.php?id=$r_id'><img src='$r_img' alt='$r_name' /></a>
+                  </div>
+                  <div class='card-body'>
+                    <div class='title-row'>
+                      <h4><a href='product.php?id=$r_id' style='text-decoration:none; color:inherit;'>$r_name</a></h4>
+                      <span class='rating'>⭐ $r_rating</span>
+                    </div>
+                    <p class='desc'>$r_desc</p>
+                    <div class='price-row'>
+                      <span class='price'>$$r_price</span>
+                      " . ($r_old ? "<span class='old'>$$r_old</span>" : "") . "
+                    </div>
+                    <button class='buy-btn' onclick=\"addToCart('$r_id', null, 1, {name: '$jsRName', price: {$rel['price']}, image: '$r_img'})\" style='margin-top: 10px;'>Add to Cart</button>
+                  </div>
+                </div>";
+            }
+        }
+    }
+    return $related_html;
+}
+
+$related_html = getRelatedProducts($conn, $product);
+?>
 <!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="description" content="Premium UI Design System and UX/UI design resources from UX Pacific Shop. High-quality templates, mockups, and design assets." />
-    <meta name="keywords" content="UI design system, UX templates, design resources, UX Pacific, premium design assets" />
-    <title>Premium UI Design System – UX Pacific Shop</title>
+    <meta name="description" content="<?php echo $name; ?> - Premium design resource from UX Pacific Shop." />
+    <title><?php echo $name; ?> – UX Pacific Shop</title>
     <link
       href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
       rel="stylesheet"
@@ -14,7 +150,6 @@
   </head>
   <body>
     <!-- NAVBAR -->
-
     <header class="site-header" id="navbar">
       <nav class="nav-bar">
         <!-- Logo -->
@@ -36,62 +171,28 @@
             <img src="img/cart-icon.webp" alt="Shopping cart" />
             <span id="cart-count">0</span>
           </a>
-          <a href="signin.php" class="nav-cta">Sign in</a>
-          <div class="nav-user">
-            <div class="user-avatar">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                <circle cx="12" cy="7" r="4"></circle>
-              </svg>
-            </div>
-            <div class="user-info">
-              <span class="user-name">User</span>
-              <span class="user-role">Customer</span>
-            </div>
-            <div class="user-dropdown">
-              <a href="account.php" class="user-dropdown-item">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                  <circle cx="12" cy="7" r="4"></circle>
-                </svg>
-                <span>My Account</span>
-              </a>
-              <a href="cart.php" class="user-dropdown-item">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <circle cx="9" cy="21" r="1"></circle>
-                  <circle cx="20" cy="21" r="1"></circle>
-                  <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
-                </svg>
-                <span>My Cart</span>
-              </a>
-              <a href="orders.php" class="user-dropdown-item">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
-                  <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
-                </svg>
-                <span>My Orders</span>
-              </a>
-              <div class="user-dropdown-divider"></div>
-              <a href="#" onclick="handleSignOut(); return false;" class="user-dropdown-item logout">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-                  <polyline points="16 17 21 12 16 7"></polyline>
-                  <line x1="21" y1="12" x2="9" y2="12"></line>
-                </svg>
-                <span>Sign Out</span>
-              </a>
-            </div>
-          </div>
+          <?php if (isset($_SESSION['user_id'])): ?>
+             <div class="nav-user">
+               <div class="user-avatar">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="12" cy="7" r="4"></circle>
+                  </svg>
+               </div>
+               <div class="user-info">
+                 <span class="user-name"><?php echo htmlspecialchars($_SESSION['username'] ?? 'User'); ?></span>
+               </div>
+               <div class="user-dropdown">
+                 <a href="orders.php" class="user-dropdown-item">My Orders</a>
+                 <a href="#" onclick="handleSignOut(); return false;" class="user-dropdown-item logout">Sign Out</a>
+               </div>
+             </div>
+          <?php else: ?>
+             <a href="signin.php" class="nav-cta">Sign in</a>
+          <?php endif; ?>
         </div>
-        <!-- Mobile Menu Button -->
-        <button
-          id="mobile-menu-btn"
-          class="nav-toggle"
-          aria-label="Toggle navigation"
-        >
-          <span></span>
-          <span></span>
-          <span></span>
+        <button id="mobile-menu-btn" class="nav-toggle" aria-label="Toggle navigation">
+          <span></span><span></span><span></span>
         </button>
       </nav>
       <!-- Mobile Menu -->
@@ -100,9 +201,7 @@
         <a href="index.php#story" class="nav-mobile-link">About Us</a>
         <a href="index.php#products" class="nav-mobile-link">New</a>
         <a href="shopAll.php" class="nav-mobile-link">Buy Now</a>
-        <a href="signin.php" class="nav-mobile-link nav-mobile-cta">
-          Sign in
-        </a>
+        <a href="signin.php" class="nav-mobile-link nav-mobile-cta">Sign in</a>
       </div>
     </header>
 
@@ -110,87 +209,90 @@
       <!-- LEFT : IMAGE GALLERY -->
       <div class="product-gallery">
         <div class="main-image">
-          <img id="mainProductImage" src="img/t1.webp" alt="Product Image" />
+          <img id="mainProductImage" src="<?php echo $images[0]; ?>" alt="<?php echo $name; ?>" />
+          <?php if (count($images) > 1): ?>
           <button class="nav prev" onclick="changeImage(-1)">‹</button>
           <button class="nav next" onclick="changeImage(1)">›</button>
-
-          <!-- DOTS INSIDE IMAGE -->
-          <div class="image-dots" id="sliderDots"></div>
+          <?php endif; ?>
+          <div class="image-dots" id="sliderDots">
+             <?php foreach ($images as $i => $img): ?>
+                <span onclick="setImage(<?php echo $i; ?>)" class="<?php echo $i === 0 ? 'active' : ''; ?>"></span>
+             <?php endforeach; ?>
+          </div>
         </div>
         <div class="thumbnail-row">
-          <img src="img/t2.webp" class="thumb active" onclick="setImage(0)" />
-          <img src="img/t3.webp" class="thumb" onclick="setImage(1)" />
-          <img src="img/t4.webp" class="thumb" onclick="setImage(2)" />
-          <img src="img/t1.webp" class="thumb" onclick="setImage(3)" />
+          <?php foreach ($images as $i => $img): ?>
+            <img src="<?php echo $img; ?>" class="thumb <?php echo $i === 0 ? 'active' : ''; ?>" onclick="setImage(<?php echo $i; ?>)" />
+          <?php endforeach; ?>
         </div>
         <div class="slider-indicator">
-          <span id="slideCount">1 / 4</span>
+          <span id="slideCount">1 / <?php echo count($images); ?></span>
         </div>
       </div>
 
       <!-- RIGHT : PRODUCT INFO -->
       <div class="product-info">
-        <h1>Premium UI Design System</h1>
-        <p class="description">
-          A comprehensive UI/UX design system with 150+ components, layouts,
-          templates, and professional assets for modern products.
-        </p>
-        <div class="rating">★★★★★ <span>4.9 (247 reviews)</span></div>
+        <h1><?php echo $name; ?></h1>
+        <p class="description"><?php echo $description; ?></p>
+        <div class="rating">★★★★★ <span><?php echo $rating; ?> (<?php echo rand(50, 500); ?> reviews)</span></div>
         <div class="price">
-          <span class="current">$29</span>
-          <span class="old">$99</span>
-          <span class="badge">71% OFF</span>
+          <span class="current">$<?php echo $price; ?></span>
+          <?php if ($old_price): ?>
+            <span class="old">$<?php echo $old_price; ?></span>
+            <span class="badge">SALE</span>
+          <?php endif; ?>
         </div>
 
-        <!-- Platform -->
-        <!-- <div class="option">
-          <label>Purchase From</label>
-          <select id="platformSelect">
-            <option value="">Select Platform</option>
-            <option value="freepik">Freepik</option>
-            <option value="gumroad">Gumroad</option>
-            <option value="behance">Behance</option>
-            <option value="uxpacific">UXPacific</option>
-          </select>
-        </div> -->
-
-        <!-- UXPacific Options -->
          <div>
-        <!-- <div id="uxOptions"> -->
-          <!-- Product Type Selection -->
-          <div class="option">
-            <label>Product Type *</label>
-            <select id="product-type-select" onchange="handleProductTypeChange(this.value)">
-              <option value="physical">Physical Product</option>
-              <option value="digital">Digital Product</option>
-            </select>
+          <!-- Dynamic Options based on Available Type -->
+          
+          <!-- Format Selection (Physical vs Digital) -->
+          <?php if ($available_type === 'both'): ?>
+              <div class="option">
+                <label>Format</label>
+                <select id="product-format-select" onchange="toggleFormat(this.value)">
+                  <option value="physical">Physical Product</option>
+                  <option value="digital">Digital Product</option>
+                </select>
+              </div>
+          <?php else: ?>
+              <!-- Hidden input for single type products -->
+              <input type="hidden" id="product-format-select" value="<?php echo $available_type; ?>">
+          <?php endif; ?>
+
+          <!-- Digital Options Container -->
+          <div id="digital-options" style="display: <?php echo ($available_type === 'digital' ? 'block' : 'none'); ?>;">
+              <div class="option">
+                <label>License Type</label>
+                <select id="license-type" onchange="updatePrice()">
+                  <option value="Personal">Personal License</option>
+                  <option value="Commercial">Commercial License</option>
+                </select>
+              </div>
           </div>
 
-          <div class="option">
-            <label>License Type</label>
-            <select>
-              <option>Personal</option>
-              <option>Commercial</option>
-            </select>
+          <!-- Physical Options Container -->
+          <div id="physical-options" style="display: <?php echo ($available_type === 'physical' || $available_type === 'both' ? 'block' : 'none'); ?>;">
+              <?php 
+                $category_lower = strtolower($category);
+                $show_sizes = (strpos($category_lower, 't-shirt') !== false || strpos($category_lower, 'hoodie') !== false);
+              ?>
+              
+              <?php if ($show_sizes): ?>
+              <div class="block">
+                <label>Select Size</label>
+                <div class="sizes" id="size-selector">
+                  <button type="button" onclick="selectSize(this, 'S')">S</button>
+                  <button type="button" onclick="selectSize(this, 'M')">M</button>
+                  <button type="button" class="active" onclick="selectSize(this, 'L')">L</button>
+                  <button type="button" onclick="selectSize(this, 'XL')">XL</button>
+                </div>
+              </div>
+              <?php endif; ?>
           </div>
-
-           <!-- <div class="option">
-            <label>Format Type</label>
-            <select>
-              <option>Digital Version (PDF / Download)</option>
-              <option>Physical Version (Printed Copy)</option>
-            </select>
-          </div> -->
-
-          <div class="block">
-            <label>Select Size</label>
-            <div class="sizes">
-              <button>S</button>
-              <button>M</button>
-              <button class="active">L</button>
-              <button>XL</button>
-            </div>
-          </div>
+          
+          <!-- Hidden Input for Logic -->
+          <input type="hidden" id="selected-size" value="<?php echo $show_sizes ? 'L' : 'One Size'; ?>" />
 
           <div class="block">
             <label>Quantity</label>
@@ -203,230 +305,68 @@
         </div>
 
         <div class="product-buttons">
-          <button class="buy-btn" onclick="addToCart('template-001', document.querySelector('.sizes button.active')?.textContent || 'L', parseInt(document.getElementById('count').textContent))">Add to Cart</button>
-          <button class="buy-btn buy-now-btn" onclick="buyNow('template-001', document.querySelector('.sizes button.active')?.textContent || 'L', parseInt(document.getElementById('count').textContent))">Buy Now</button>
+          <button class="buy-btn" onclick="addToCartWrapper(<?php echo $product_id; ?>)">Add to Cart</button>
+          
+          <button class="buy-btn buy-now-btn" onclick="addToCartWrapper(<?php echo $product_id; ?>); window.location.href='cart.php';">Buy Now</button>
         </div>
 
         <!-- TRUST CARDS -->
         <div class="trust-grid right-trust">
           <div class="trust-card">
-            <span class="icon">
-              <img src="img/m4.webp" alt="Secure Purchase Icon" />
-            </span>
-            <div>
-              <h4>Secure Purchase</h4>
-              <p>256-bit SSL encrypted</p>
-            </div>
+            <span class="icon"><img src="img/m4.webp" alt="Secure Purchase Icon" /></span>
+            <div><h4>Secure Purchase</h4><p>256-bit SSL encrypted</p></div>
           </div>
           <div class="trust-card">
-            <span class="icon">
-              <img src="img/m2.webp" alt="Instant Download Icon" />
-            </span>
-            <div>
-              <h4>Instant Download</h4>
-              <p>Access immediately</p>
-            </div>
+            <span class="icon"><img src="img/m2.webp" alt="Instant Download Icon" /></span>
+            <div><h4>Instant Download</h4><p>Access immediately</p></div>
           </div>
           <div class="trust-card">
-            <span class="icon">
-              <img src="img/m3.webp" alt="Safe Payment Icon" />
-            </span>
-            <div>
-              <h4>Safe Payment</h4>
-              <p>Multiple payment options</p>
-            </div>
+            <span class="icon"><img src="img/m3.webp" alt="Safe Payment Icon" /></span>
+            <div><h4>Safe Payment</h4><p>Multiple payment options</p></div>
           </div>
           <div class="trust-card">
-            <span class="icon">
-              <img src="img/m1.webp" alt="Refund Policy Icon" />
-            </span>
-            <div>
-              <h4>Refund Policy</h4>
-              <p>30-day money back</p>
-            </div>
+            <span class="icon"><img src="img/m1.webp" alt="Refund Policy Icon" /></span>
+            <div><h4>Refund Policy</h4><p>30-day money back</p></div>
           </div>
         </div>
       </div>
     </div>
-    <!-- ================= PRODUCT DESCRIPTION & TABS ================= -->
 
+
+    <!-- TABS -->
     <section class="product-extra">
-      <!-- TABS -->
       <div class="product-tabs">
         <button class="tab-btn active" data-tab="desc">Description</button>
         <button class="tab-btn" data-tab="included">What’s Included</button>
-        <button class="tab-btn" data-tab="specs">File Specification</button>
+        <!-- Show File Specs ONLY if digital or available as digital -->
+        <button class="tab-btn" id="specs-tab-btn" data-tab="specs" style="display: <?php echo ($available_type !== 'physical' ? 'inline-block' : 'none'); ?>">File Specification</button>
       </div>
-      <!-- TAB CONTENT -->
+
       <div class="tab-box active" id="desc">
         <h3>About This Product</h3>
-        <p>
-          This comprehensive design system includes everything you need to
-          create stunning digital products. Built with modern design principles
-          and best practices, it’s perfect for designers and developers who want
-          to speed up their workflow.
-        </p>
-        <ul class="feature-list">
-          <li>Professionally designed by expert UI/UX designers</li>
-          <li>Regular updates and lifetime access</li>
-          <li>Compatible with Figma, Sketch, and Adobe XD</li>
-          <li>Comprehensive documentation included</li>
-        </ul>
+        <p><?php echo nl2br($description); ?></p>
       </div>
       <div class="tab-box" id="included">
-        <ul class="feature-list">
-          <li>150+ UI components</li>
-          <li>Design tokens & variables</li>
-          <li>Responsive layouts</li>
-          <li>Dark & Light themes</li>
-          <li>Documentation files</li>
-        </ul>
+        <div class="feature-list" style="line-height: 1.6;">
+            <?php echo $whats_included; ?>
+        </div>
       </div>
       <div class="tab-box" id="specs">
-        <div class="spec-row">
-          <span>File Size : </span><strong>245 MB</strong>
-        </div>
-        <div class="spec-row">
-          <span>Last Updated : </span><strong>December 2024</strong>
-        </div>
-        <div class="spec-row"><span>Version</span><strong>2.5.0</strong></div>
-        <div class="spec-row">
-          <span>Minimum Requirements : </span
-          ><strong>Figma Desktop / Web</strong>
-        </div>
-        <div class="spec-row">
-          <span>Language : </span><strong>English</strong>
-        </div>
-        <div class="spec-row">
-          <span>License : </span><strong>Commercial Use Allowed</strong>
+         <div class="feature-list" style="line-height: 1.6;">
+            <?php echo $file_specs; ?>
         </div>
       </div>
     </section>
 
     <!-- RELATED PRODUCTS -->
+    <?php if ($related_html): ?>
     <section class="related-section">
       <h2 class="section-title">Related Products</h2>
-
       <div class="related-grid">
-        <!-- CARD -->
-        <div class="related-card">
-          <div class="card-img">
-            <img src="img/t4.webp" alt="Designer Sticker Pack" />
-            <!-- <span class="wishlist">♡</span> -->
-          </div>
-
-          <div class="card-body">
-            <div class="title-row">
-              <h4>Designer Sticker Pack</h4>
-              <span class="rating">⭐ 4.5</span>
-            </div>
-
-            <p class="desc">
-              A fun mix of flat icons, labels, and creative stickers made for
-              laptops, planners, and workspace decor.
-            </p>
-
-            <p class="size">Size: A5 / A4 printable</p>
-
-            <div class="price-row">
-              <span class="price">$499</span>
-              <span class="old">$1499</span>
-              <span class="off">67% OFF</span>
-            </div>
-
-            <button class="buy-btn">Buy Now</button>
-          </div>
-        </div>
-
-        <!-- DUPLICATE CARD -->
-        <div class="related-card">
-          <div class="card-img">
-            <img src="img/t3.webp" alt="Designer Sticker Pack" />
-            <!-- <span class="wishlist">♡</span> -->
-          </div>
-
-          <div class="card-body">
-            <div class="title-row">
-              <h4>Designer Sticker Pack</h4>
-              <span class="rating">⭐ 4.5</span>
-            </div>
-
-            <p class="desc">
-              A fun mix of flat icons, labels, and creative stickers made for
-              laptops, planners, and workspace decor.
-            </p>
-
-            <p class="size">Size: A5 / A4 printable</p>
-
-            <div class="price-row">
-              <span class="price">$499</span>
-              <span class="old">$1499</span>
-              <span class="off">67% OFF</span>
-            </div>
-
-            <button class="buy-btn">Buy Now</button>
-          </div>
-        </div>
-
-        <div class="related-card">
-          <div class="card-img">
-            <img src="img/t2.webp" alt="Designer Sticker Pack" />
-            <!-- <span class="wishlist">♡</span> -->
-          </div>
-
-          <div class="card-body">
-            <div class="title-row">
-              <h4>Designer Sticker Pack</h4>
-              <span class="rating">⭐ 4.5</span>
-            </div>
-
-            <p class="desc">
-              A fun mix of flat icons, labels, and creative stickers made for
-              laptops, planners, and workspace decor.
-            </p>
-
-            <p class="size">Size: A5 / A4 printable</p>
-
-            <div class="price-row">
-              <span class="price">$499</span>
-              <span class="old">$1499</span>
-              <span class="off">67% OFF</span>
-            </div>
-
-            <button class="buy-btn">Buy Now</button>
-          </div>
-        </div>
-
-        <div class="related-card">
-          <div class="card-img">
-            <img src="img/t1.webp" alt="Designer Sticker Pack" />
-            <!-- <span class="wishlist">♡</span> -->
-          </div>
-
-          <div class="card-body">
-            <div class="title-row">
-              <h4>Designer Sticker Pack</h4>
-              <span class="rating">⭐ 4.5</span>
-            </div>
-
-            <p class="desc">
-              A fun mix of flat icons, labels, and creative stickers made for
-              laptops, planners, and workspace decor.
-            </p>
-
-            <p class="size">Size: A5 / A4 printable</p>
-
-            <div class="price-row">
-              <span class="price">$499</span>
-              <span class="old">$1499</span>
-              <span class="off">67% OFF</span>
-            </div>
-
-            <button class="buy-btn">Buy Now</button>
-          </div>
-        </div>
+        <?php echo $related_html; ?>
       </div>
     </section>
+    <?php endif; ?>
 
     <!-- FOOTER -->
     <footer class="site-footer">
@@ -434,165 +374,153 @@
         <div class="footer-top">
           <div class="footer-brand">
             <img src="img/LOGO.webp" alt="UX Pacific" />
-            <p>
-              Design resources and merchandise trusted by creators worldwide —
-              built to be used, worn, and valued.
-            </p>
-            <div class="footer-socials">
-              <a
-                href="https://dribbble.com/social-ux-pacific"
-                target="_blank"
-                rel="noopener"
-              >
-                <img src="img/bl.webp" alt="Dribbble" />
-              </a>
-              <a
-                href="https://www.instagram.com/official_uxpacific/"
-                target="_blank"
-                rel="noopener"
-              >
-                <img src="img/i.webp" alt="Instagram" />
-              </a>
-              <a
-                href="https://www.linkedin.com/company/uxpacific/"
-                target="_blank"
-                rel="noopener"
-              >
-                <img src="img/in.webp" alt="LinkedIn" />
-              </a>
-              <a
-                href="https://in.pinterest.com/uxpacific/"
-                target="_blank"
-                rel="noopener"
-              >
-                <img src="img/p.webp" alt="Pinterest" />
-              </a>
-              <a
-                href="https://www.behance.net/ux_pacific"
-                target="_blank"
-                rel="noopener"
-              >
-                <img src="img/be.webp" alt="Behance" />
-              </a>
+            <p>Design resources and merchandise trusted by creators worldwide.</p>
+             <div class="footer-socials">
+              <a href="https://dribbble.com/social-ux-pacific" target="_blank"><img src="img/bl.webp" alt="Dribbble" /></a>
+              <a href="https://www.instagram.com/official_uxpacific/" target="_blank"><img src="img/i.webp" alt="Instagram" /></a>
+              <a href="https://www.linkedin.com/company/uxpacific/" target="_blank"><img src="img/in.webp" alt="LinkedIn" /></a>
+              <a href="https://in.pinterest.com/uxpacific/" target="_blank"><img src="img/p.webp" alt="Pinterest" /></a>
+              <a href="https://www.behance.net/ux_pacific" target="_blank"><img src="img/be.webp" alt="Behance" /></a>
             </div>
           </div>
           <div class="footer-contact">
-            <p>Support : +91 9274061063&nbsp;&nbsp;&nbsp;&nbsp;|</p>
-            <p>
-              Email :
-              <a
-                href="https://mail.google.com/mail/?view=cm&fs=1&to=hello@uxpacific.com"
-                style="text-decoration: none; color: inherit"
-                target="_blank"
-                >hello@uxpacific.com</a
-              >
-              &nbsp;&nbsp;&nbsp;&nbsp;
-            </p>
-            <!-- <p>UX Pacific, Ahmedabad.</p> -->
+             <p>Support : +91 9274061063 | Email : <a href="mailto:hello@uxpacific.com"    style="text-decoration: none; color: inherit"
+                target="_blank" >hello@uxpacific.com</a></p>
           </div>
         </div>
       </div>
       <div class="footer-bottom">
         <p>©2026 UXPacific. All rights reserved.</p>
-      
-          <div class="footer-links">
-            <a href="policies.php" target="">Our Policies </a>
-            <span>•</span>
-            <a href="contact.php" style="text-decoration: none;">Contact Us</a>
-          </div>
+        <div class="footer-links">
+          <a href="policies.php">Our Policies</a> <span>•</span> <a href="contact.php">Contact Us</a>
         </div>
       </div>
     </footer>
 
-    <!-- </section> -->
-    <!-- <script>
-      /* Image Slider */
-      const images = ["img/t2.webp", "img/t3.webp", "img/t4.webp", "img/t1.webp"];
+    <script src="script.js"></script>
+    <script>
+      // PHP-fed image array for slider logic
+      const productImages = <?php echo json_encode($images); ?>;
       let currentIndex = 0;
       const mainImage = document.getElementById("mainProductImage");
       const thumbs = document.querySelectorAll(".thumb");
       const slideCount = document.getElementById("slideCount");
-      const dotsContainer = document.getElementById("sliderDots");
-
-      images.forEach((_, i) => {
-        const dot = document.createElement("span");
-        dot.onclick = () => setImage(i);
-        dotsContainer.appendChild(dot);
-      });
-      const dots = dotsContainer.querySelectorAll("span");
+      const dots = document.querySelectorAll("#sliderDots span");
 
       function updateSlider() {
-        mainImage.src = images[currentIndex];
-        slideCount.textContent = `${currentIndex + 1} / ${images.length}`;
-        thumbs.forEach((t, i) =>
-          t.classList.toggle("active", i === currentIndex)
-        );
-        dots.forEach((d, i) =>
-          d.classList.toggle("active", i === currentIndex)
-        );
+        if(mainImage) mainImage.src = productImages[currentIndex];
+        if(slideCount) slideCount.textContent = `${currentIndex + 1} / ${productImages.length}`;
+        
+        thumbs.forEach((t, i) => t.classList.toggle("active", i === currentIndex));
+        dots.forEach((d, i) => d.classList.toggle("active", i === currentIndex));
       }
-      function setImage(i) {
+
+      window.setImage = function(i) {
         currentIndex = i;
         updateSlider();
       }
-      function changeImage(s) {
-        currentIndex = (currentIndex + s + images.length) % images.length;
+
+      window.changeImage = function(s) {
+        currentIndex = (currentIndex + s + productImages.length) % productImages.length;
         updateSlider();
       }
-      updateSlider();
 
-      /* Quantity */
+      // Size Selection
+      window.selectSize = function(btn, size) {
+          const buttons = document.querySelectorAll('#size-selector button');
+          buttons.forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          const sizeInput = document.getElementById('selected-size');
+          if(sizeInput) sizeInput.value = size;
+      }
+
+      // Quantity Logic
       let quantity = 1;
-      function qty(change) {
+      window.qty = function(change) {
         quantity += change;
         if (quantity < 1) quantity = 1;
         document.getElementById("count").textContent = quantity;
       }
-
-      /* Product Type Selection - Frontend Only */
-      // Store product type in localStorage for checkout page
-      function handleProductTypeChange(value) {
-        // Store product_type in localStorage
-        localStorage.setItem('product_type', value);
-        console.log('Product type set to:', value);
+      
+      // Dynamic Logic for Price Update (License check)
+      const basePrice = <?php echo floatval($product['price']); ?>;
+      const commercialPrice = <?php echo floatval($commercial_price_val); ?>;
+      
+      window.updatePrice = function() {
+          const format = document.getElementById('product-format-select').value;
+          const license = document.getElementById('license-type').value;
+          const priceDisplay = document.querySelector('.price .current');
+          
+          if (format === 'digital' && license === 'Commercial') {
+              priceDisplay.innerText = '$' + commercialPrice.toFixed(2);
+          } else {
+              // Default or Physical
+              priceDisplay.innerText = '$' + basePrice.toFixed(2);
+          }
       }
 
-      // Load saved product type on page load
-      document.addEventListener('DOMContentLoaded', function() {
-        const savedProductType = localStorage.getItem('product_type') || 'physical';
-        const productTypeSelect = document.getElementById('product-type-select');
-        if (productTypeSelect) {
-          productTypeSelect.value = savedProductType;
-        }
-      });
+      // Dynamic Logic for Format Selection (Physical/Digital)
+      window.toggleFormat = function(format) {
+          const physicalOpts = document.getElementById('physical-options');
+          const digitalOpts = document.getElementById('digital-options');
+          const specsTab = document.getElementById('specs-tab-btn');
+          
+          if (format === 'digital') {
+              if(physicalOpts) physicalOpts.style.display = 'none';
+              if(digitalOpts) digitalOpts.style.display = 'block';
+              if(specsTab) specsTab.style.display = 'inline-block';
+          } else {
+              if(physicalOpts) physicalOpts.style.display = 'block';
+              if(digitalOpts) digitalOpts.style.display = 'none';
+              if(specsTab) specsTab.style.display = 'none';
+          }
+          // Also update price in case default is diff
+          window.updatePrice();
+      }
 
-      // Make function globally available
-      window.handleProductTypeChange = handleProductTypeChange;
+      // Get selected options for Cart
+      window.getSelectedSize = function() {
+          const format = document.getElementById('product-format-select').value;
+          
+          if (format === 'digital') {
+              // Return License
+              const licenseInput = document.getElementById('license-type');
+              return licenseInput ? licenseInput.value : 'Personal License';
+          } else {
+              // Return Size or One Size
+              const sizeInput = document.getElementById('selected-size');
+              return sizeInput ? sizeInput.value : 'One Size';
+          }
+      }
 
-      /* Platform Logic */
-      const platform = document.getElementById("platformSelect");
-      const uxOptions = document.getElementById("uxOptions");
-      const buyBtn = document.querySelector(".buy-btn");
-
-      platform.onchange = () => {
-        const val = platform.value;
-        if (val === "uxpacific") {
-          uxOptions.style.display = "block";
-          buyBtn.textContent = "Buy on UXPacific";
-        } else {
-          uxOptions.style.display = "none";
-          buyBtn.textContent =
-            val === "freepik"
-              ? "Buy on Freepik"
-              : val === "gumroad"
-              ? "Buy on Gumroad"
-              : val === "behance"
-              ? "View on Behance"
-              : "Buy Now";
-        }
-      };
-    </script> -->
-    <script src="script.js"></script>
+      window.addToCartWrapper = function(id) {
+         // Determine current price being displayed
+         const format = document.getElementById('product-format-select').value;
+         const license = document.getElementById('license-type').value;
+         
+         let finalPrice = basePrice;
+         if (format === 'digital' && license === 'Commercial') {
+             finalPrice = commercialPrice;
+         }
+         
+         addToCart(
+             id, 
+             getSelectedSize(), 
+             parseInt(document.getElementById('count').textContent), 
+             {
+                 name: '<?php echo addslashes($name); ?>', 
+                 price: finalPrice, 
+                 image: '<?php echo addslashes($images[0]); ?>'
+             }, 
+             format
+         );
+      }
+      
+      // Handle Sign Out (simple version)
+      window.handleSignOut = function() {
+          // You should implement a proper signout API call or redirect
+          window.location.href = 'signout.php'; // Assuming this exists or handled
+      }
+    </script>
   </body>
 </html>
-
