@@ -180,7 +180,6 @@
       background: var(--admin-bg);
       transition: all 0.2s;
       cursor: pointer;
-      position: relative;
     }
 
     .file-upload-area:hover {
@@ -303,92 +302,6 @@
       .form-actions a {
         width: 100%;
       }
-    }
-
-    /* Media Preview Grid */
-    .media-preview-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-      gap: 1rem;
-      margin-top: 1rem;
-    }
-
-    .media-preview-item {
-      position: relative;
-      aspect-ratio: 1;
-      border-radius: 8px;
-      overflow: hidden;
-      border: 1px solid var(--admin-border);
-      background: var(--admin-bg);
-    }
-    
-    .media-preview-item:hover .media-remove-btn {
-      opacity: 1;
-      transform: scale(1);
-    }
-
-    .media-preview-item img,
-    .media-preview-item video {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-
-    .media-remove-btn {
-      position: absolute;
-      top: 4px;
-      right: 4px;
-      background: rgba(239, 68, 68, 0.9);
-      color: white;
-      border: none;
-      border-radius: 50%;
-      width: 24px;
-      height: 24px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 14px;
-      z-index: 10;
-      transition: all 0.2s;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-    }
-
-    .media-remove-btn:hover {
-      transform: scale(1.1);
-    }
-
-    .media-type-badge {
-      position: absolute;
-      bottom: 4px;
-      left: 4px;
-      background: rgba(0, 0, 0, 0.6);
-      color: white;
-      font-size: 10px;
-      font-weight: 600;
-      padding: 2px 6px;
-      border-radius: 4px;
-      pointer-events: none;
-    }
-
-    .doc-preview {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100%;
-      color: var(--admin-text);
-      font-size: 0.75rem;
-      text-align: center;
-      padding: 0.5rem;
-      background: var(--admin-bg);
-    }
-    
-    .doc-preview svg {
-      width: 32px;
-      height: 32px;
-      margin-bottom: 0.5rem;
-      opacity: 0.7;
     }
   </style>
 </head>
@@ -523,15 +436,15 @@
           </div>
         </div>
 
-        <!-- Product Media -->
+        <!-- Product Image -->
         <div class="form-section">
-          <h2 class="form-section-title">Product Media</h2>
+          <h2 class="form-section-title">Product Image</h2>
           <div class="form-group">
-            <label class="form-label">
-              Upload Media (Images, Videos, Docs)
+            <label class="form-label" for="product-image">
+              Product Image
               <span class="required">*</span>
             </label>
-            <div class="file-upload-area" id="file-upload-area">
+            <div class="file-upload-area" id="file-upload-area" onclick="document.getElementById('product-image').click()">
               <svg class="file-upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                 <polyline points="17 8 12 3 7 8"></polyline>
@@ -668,14 +581,7 @@
 
     // Drag and drop handling
     const fileUploadArea = document.getElementById('file-upload-area');
-    const fileInput = document.getElementById('product-media');
-    const previewGrid = document.getElementById('media-preview-grid');
-
-    // Click to upload
-    fileUploadArea.addEventListener('click', () => fileInput.click());
-
-    // Handle file selection
-    fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
+    const fileInput = document.getElementById('product-image');
 
     fileUploadArea.addEventListener('dragover', (e) => {
       e.preventDefault();
@@ -689,63 +595,12 @@
     fileUploadArea.addEventListener('drop', (e) => {
       e.preventDefault();
       fileUploadArea.classList.remove('dragover');
-      handleFiles(e.dataTransfer.files);
+      const files = e.dataTransfer.files;
+      if (files.length > 0) {
+        fileInput.files = files;
+        handleFileSelect({ target: { files: files } });
+      }
     });
-
-    function handleFiles(files) {
-      const MAX_SIZE = 15 * 1024 * 1024; // 15MB
-      Array.from(files).forEach(file => {
-        if (file.size > MAX_SIZE) {
-          alert(`Skipped "${file.name}": File size exceeds 15MB.`);
-          return;
-        }
-        // Avoid duplicates
-        if (!selectedFiles.some(f => f.name === file.name && f.size === file.size)) {
-          selectedFiles.push(file);
-        }
-      });
-      updateMediaUI();
-    }
-
-    function removeFile(index) {
-      selectedFiles.splice(index, 1);
-      updateMediaUI();
-    }
-
-    function updateMediaUI() {
-      previewGrid.innerHTML = '';
-      
-      selectedFiles.forEach((file, index) => {
-        const item = document.createElement('div');
-        item.className = 'media-preview-item';
-        
-        const removeBtn = document.createElement('div');
-        removeBtn.className = 'media-remove-btn';
-        removeBtn.innerHTML = '&times;';
-        removeBtn.onclick = (e) => { e.stopPropagation(); removeFile(index); };
-        
-        let content = '';
-        const objectUrl = URL.createObjectURL(file);
-        
-        if (file.type.startsWith('image/')) {
-          content = `<img src="${objectUrl}" alt="Preview"><span class="media-type-badge">IMG</span>`;
-        } else if (file.type.startsWith('video/')) {
-          content = `<video src="${objectUrl}" controls></video><span class="media-type-badge">Video</span>`;
-        } else {
-          content = `<div class="doc-preview">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                        <polyline points="14 2 14 8 20 8"></polyline>
-                      </svg>
-                      <span style="word-break: break-all; padding: 0 4px;">${file.name}</span>
-                     </div><span class="media-type-badge">Doc</span>`;
-        }
-        
-        item.innerHTML = content;
-        item.appendChild(removeBtn);
-        previewGrid.appendChild(item);
-      });
-    }
 
     // Form submission handler
     async function handleAddProduct(event) {
@@ -821,3 +676,4 @@
 </body>
 
 </html>
+
