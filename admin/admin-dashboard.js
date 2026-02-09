@@ -213,51 +213,9 @@ async function loadUsers() {
 // ... existing code ...
 
 // Edit Product Functions
-async function editProduct(productId) {
-  try {
-      // Fetch product details
-      const response = await fetch(`../api/admin/product/get.php?id=${productId}`);
-      const result = await response.json();
-      
-      if (result.status === 'success' && result.data) {
-          const p = result.data;
-          // Populate form
-          const setVal = (id, val) => {
-             const el = document.getElementById(id);
-             if(el) el.value = val;
-          };
-          
-          setVal('edit-product-id', p.id);
-          setVal('edit-product-name', p.name);
-          setVal('edit-product-category', p.category);
-          setVal('edit-product-price', p.price);
-          setVal('edit-product-stock', p.stock || 0);
-          setVal('edit-product-rating', p.rating || 0);
-          setVal('edit-product-description', p.description || '');
-          
-          const previewEl = document.getElementById('current-image-preview');
-          if (previewEl) {
-              if (p.image) {
-                  // Ensure path is correct relative to admin folder
-                  const imagePath = p.image.startsWith('img/') ? '../' + p.image : p.image;
-                  previewEl.innerHTML = `
-                    <div style="display: flex; align-items: center; gap: 10px;">
-                        <img src="${imagePath}" alt="Current Product Image" style="width: 60px; height: 60px; object-fit: cover; border-radius: 4px; border: 1px solid #ddd;">
-                       <span>Current Image (<a href="${imagePath}" target="_blank">View Full</a>)</span>
-                    </div>`;
-              } else {
-                  previewEl.innerHTML = 'No image currently set.';
-              }
-          }
-          
-          openEditProductModal();
-      } else {
-          alert('Failed to fetch product details.');
-      }
-  } catch (e) {
-      console.error(e);
-      alert('Error fetching product details.');
-  }
+// Edit Product Functions
+function editProduct(productId) {
+  window.location.href = `editproduct.php?id=${productId}`;
 }
 
 
@@ -564,37 +522,9 @@ function filterOrders() {
 
 // Action Functions
 // Edit Product Functions
-async function editProduct(productId) {
-  try {
-      // Fetch product details
-      const response = await fetch(`../api/admin/product/get.php?id=${productId}`);
-      const result = await response.json();
-      
-      if (result.status === 'success' && result.data) {
-          const p = result.data;
-          // Populate form
-          document.getElementById('edit-product-id').value = p.id;
-          document.getElementById('edit-product-name').value = p.name;
-          document.getElementById('edit-product-category').value = p.category;
-          document.getElementById('edit-product-price').value = p.price;
-          document.getElementById('edit-product-stock').value = p.stock || 0;
-          document.getElementById('edit-product-rating').value = p.rating || 0; 
-          document.getElementById('edit-product-description').value = p.description || '';
-          
-          if (p.image) {
-              document.getElementById('current-image-preview').innerHTML = `Current: <a href="${p.image}" target="_blank">View Image</a>`;
-          } else {
-              document.getElementById('current-image-preview').innerHTML = 'No image currently set.';
-          }
-          
-          openEditProductModal();
-      } else {
-          alert('Failed to fetch product details.');
-      }
-  } catch (e) {
-      console.error(e);
-      alert('Error fetching product details.');
-  }
+// Edit Product Functions
+function editProduct(productId) {
+  window.location.href = `editproduct.php?id=${productId}`;
 }
 
 function openEditProductModal() {
