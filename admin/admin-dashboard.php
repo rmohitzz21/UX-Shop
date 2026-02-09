@@ -33,6 +33,8 @@ if (!isset($_SESSION['admin_id'])) {
       --admin-sidebar-light: #ffffff;
       --admin-sidebar-dark: #1e293b;
       --admin-accent: #667eea;
+      --admin-overlay-light: rgba(15, 23, 42, 0.6);
+      --admin-overlay-dark: rgba(0, 0, 0, 0.8);
     }
 
     [data-theme="dark"] {
@@ -41,6 +43,7 @@ if (!isset($_SESSION['admin_id'])) {
       --admin-text: var(--admin-text-dark);
       --admin-border: var(--admin-border-dark);
       --admin-sidebar: var(--admin-sidebar-dark);
+      --admin-overlay: var(--admin-overlay-dark);
       --admin-logo-img: url('img/dark-logo.webp');
 
     }
@@ -51,6 +54,7 @@ if (!isset($_SESSION['admin_id'])) {
       --admin-text: var(--admin-text-light);
       --admin-border: var(--admin-border-light);
       --admin-sidebar: var(--admin-sidebar-light);
+      --admin-overlay: var(--admin-overlay-light);
 
 
     }
@@ -696,7 +700,9 @@ if (!isset($_SESSION['admin_id'])) {
       left: 0;
       right: 0;
       bottom: 0;
-      background: rgba(0, 0, 0, 0.5);
+      background: var(--admin-overlay);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
       z-index: 2000;
       align-items: center;
       justify-content: center;
@@ -708,28 +714,17 @@ if (!isset($_SESSION['admin_id'])) {
     }
 
     .modal-dialog {
-      background: #0f172a;
+      background-color: var(--admin-card);
       border-radius: 12px;
-      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
       width: 90%;
-      max-width: 500px;
-      max-height: 100vh;
-      overflow-y: auto;
+      max-width: 900px;
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
       animation: slideUp 0.3s ease;
-      border: 1px solid #e5e7eb;
-      opacity: 1;
-    }
-
-    [data-theme="light"] .modal-dialog {
-      background: #ffffff;
-      border-color: #e5e7eb;
-      color: #1a1a1a;
-    }
-
-    [data-theme="dark"] .modal-dialog {
-      background: #1e293b;
-      border-color: #334155;
-      color: #f1f5f9;
+      border: 1px solid var(--admin-border);
+      color: var(--admin-text);
     }
 
     @keyframes slideUp {
@@ -745,32 +740,24 @@ if (!isset($_SESSION['admin_id'])) {
 
     .modal-header {
       padding: 1.5rem;
-      border-bottom: 1px solid #e5e7eb;
+      border-bottom: 1px solid var(--admin-border);
       display: flex;
       justify-content: space-between;
       align-items: center;
       background: transparent;
     }
 
-    [data-theme="dark"] .modal-header {
-      border-bottom-color: #334155;
-    }
-
     .modal-header h2 {
       font-size: 1.25rem;
       font-weight: 600;
-      color: #1a1a1a;
+      color: var(--admin-text);
       margin: 0;
-    }
-
-    [data-theme="dark"] .modal-header h2 {
-      color: #f1f5f9;
     }
 
     .modal-close {
       background: none;
       border: none;
-      color: #1a1a1a;
+      color: var(--admin-text);
       cursor: pointer;
       padding: 0.5rem;
       border-radius: 6px;
@@ -781,17 +768,9 @@ if (!isset($_SESSION['admin_id'])) {
       opacity: 0.7;
     }
 
-    [data-theme="dark"] .modal-close {
-      color: #f1f5f9;
-    }
-
     .modal-close:hover {
-      background: #f5f7fa;
+      background: var(--admin-bg);
       opacity: 1;
-    }
-
-    [data-theme="dark"] .modal-close:hover {
-      background: #0f172a;
     }
 
     .modal-close svg {
@@ -802,27 +781,20 @@ if (!isset($_SESSION['admin_id'])) {
     .modal-body {
       padding: 1.5rem;
       background: transparent;
+      overflow-y: auto;
     }
 
     .modal-order-info {
-      background: #f5f7fa;
+      background: var(--admin-bg);
       padding: 1rem;
       border-radius: 8px;
       margin-bottom: 1rem;
     }
 
-    [data-theme="dark"] .modal-order-info {
-      background: #0f172a;
-    }
-
     .modal-order-info p {
       margin: 0.5rem 0;
-      color: #1a1a1a;
+      color: var(--admin-text);
       font-size: 0.875rem;
-    }
-
-    [data-theme="dark"] .modal-order-info p {
-      color: #f1f5f9;
     }
 
     .modal-order-info strong {
@@ -832,27 +804,19 @@ if (!isset($_SESSION['admin_id'])) {
 
     .modal-footer {
       padding: 1.5rem;
-      border-top: 1px solid #e5e7eb;
+      border-top: 1px solid var(--admin-border);
       display: flex;
       gap: 1rem;
       justify-content: flex-end;
       background: transparent;
     }
 
-    [data-theme="dark"] .modal-footer {
-      border-top-color: #334155;
-    }
-
     .form-label {
       display: block;
       font-size: 0.875rem;
       font-weight: 600;
-      color: #1a1a1a;
+      color: var(--admin-text);
       margin-bottom: 0.5rem;
-    }
-
-    [data-theme="dark"] .form-label {
-      color: #f1f5f9;
     }
 
     .form-label .required {
@@ -860,29 +824,130 @@ if (!isset($_SESSION['admin_id'])) {
       margin-left: 0.25rem;
     }
 
-    .form-select {
-      width: 100%;
-      padding: 0.75rem;
-      border: 1px solid #e5e7eb;
+    .form-section {
+      margin-bottom: 2rem;
+    }
+
+    .form-section-title {
+      font-size: 1.1rem;
+      /* Slightly smaller for modal */
+      font-weight: 600;
+      color: var(--admin-text);
+      margin-bottom: 1.5rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid var(--admin-border);
+    }
+
+    .form-group.full-width {
+      grid-column: 1 / -1;
+    }
+
+    .form-help-text {
+      font-size: 0.75rem;
+      color: var(--admin-text);
+      opacity: 0.6;
+      margin-top: 0.5rem;
+    }
+
+    .form-actions {
+      display: flex;
+      gap: 1rem;
+      justify-content: flex-end;
+      margin-top: 2rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--admin-border);
+    }
+
+    .btn-secondary {
+      padding: 0.75rem 1.5rem;
+      background: var(--admin-bg);
+      border: 1px solid var(--admin-border);
       border-radius: 8px;
-      font-size: 0.875rem;
-      background: #f5f7fa;
-      color: #1a1a1a;
-      font-family: 'Inter', sans-serif;
+      color: var(--admin-text);
+      font-weight: 500;
       cursor: pointer;
       transition: all 0.2s;
     }
 
-    [data-theme="dark"] .form-select {
-      border-color: #334155;
-      background: #0f172a;
-      color: #f1f5f9;
+    .btn-secondary:hover {
+      background: var(--admin-card);
+      border-color: var(--admin-accent);
     }
 
-    .form-select:focus {
+    .btn-primary {
+      padding: 0.75rem 1.5rem;
+      background: var(--admin-accent);
+      border: 1px solid var(--admin-accent);
+      border-radius: 8px;
+      color: #ffffff;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-decoration: none;
+    }
+
+    .btn-primary:hover {
+      opacity: 0.9;
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    /* Form Elements for Modals */
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      margin-bottom: 1rem;
+    }
+
+    .edit-product-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 1.5rem;
+    }
+    @media (max-width: 768px) {
+      .edit-product-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .form-input,
+    .form-select,
+    .form-textarea {
+      width: 100%;
+      padding: 0.75rem;
+      border: 1px solid var(--admin-border);
+      border-radius: 8px;
+      font-size: 0.875rem;
+      background-color: var(--admin-bg);
+      color: var(--admin-text);
+      font-family: 'Inter', sans-serif;
+      transition: all 0.2s;
+    }
+
+    .form-select {
+      cursor: pointer;
+    }
+
+    .form-input:focus,
+    .form-select:focus,
+    .form-textarea:focus {
       outline: none;
-      border-color: #667eea;
+      border-color: var(--admin-accent);
       box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    .form-textarea {
+      min-height: 120px;
+      resize: vertical;
     }
 
     @media (max-width: 768px) {
@@ -1274,7 +1339,6 @@ if (!isset($_SESSION['admin_id'])) {
         </div>
       </div>
     </main>
-  </div>
 
   <!-- Order Details Modal -->
   <div class="modal-overlay" id="order-details-modal-overlay" onclick="closeOrderDetailsModal()">
@@ -1353,58 +1417,74 @@ if (!isset($_SESSION['admin_id'])) {
       <div class="modal-body">
         <form id="edit-product-form" onsubmit="handleUpdateProduct(event)">
           <input type="hidden" id="edit-product-id" name="id">
-          
-          <div class="form-group">
-            <label class="form-label" for="edit-product-name">Product Name <span class="required">*</span></label>
-            <input type="text" id="edit-product-name" name="name" class="form-input" required>
+
+          <div class="form-section">
+            <h3 class="form-section-title">Basic Information</h3>
+            <div class="form-grid">
+              <div class="form-group" style="grid-column: 1 / -1;">
+                <label class="form-label" for="edit-product-name">Product Name <span class="required">*</span></label>
+                <input type="text" id="edit-product-name" name="name" class="form-input" required />
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="edit-product-category">Category <span class="required">*</span></label>
+                <select id="edit-product-category" name="category" class="form-select" required>
+                  <option value="T-Shirts">T-Shirts</option>
+                  <option value="Stickers">Stickers</option>
+                  <option value="Booklet">Booklet</option>
+                  <option value="Workbook">Workbook</option>
+                  <option value="Mockup">Mockup</option>
+                  <option value="Badges">Badges</option>
+                  <option value="Template">UI Template</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="edit-product-rating">Rating</label>
+                <input type="number" id="edit-product-rating" name="rating" class="form-input" step="0.1" min="0"
+                  max="5" />
+              </div>
+              <div class="form-group" style="grid-column: 1 / -1;">
+                <label class="form-label" for="edit-product-description">Description</label>
+                <textarea id="edit-product-description" name="description" class="form-textarea"></textarea>
+              </div>
+            </div>
           </div>
 
-          <div class="form-group" style="margin-top: 1rem;">
-             <label class="form-label" for="edit-product-category">Category <span class="required">*</span></label>
-             <select id="edit-product-category" name="category" class="form-select" required>
-                <option value="T-Shirts">T-Shirts</option>
-                <option value="Stickers">Stickers</option>
-                <option value="Booklet">Booklet</option>
-                <option value="Workbook">Workbook</option>
-                <option value="Mockup">Mockup</option>
-                <option value="Badges">Badges</option>
-                <option value="Template">UI Template</option>
-             </select>
-          </div>
-
-          <div class="form-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
-            <div class="form-group">
+          <div class="form-section">
+            <h3 class="form-section-title">Pricing & Inventory</h3>
+            <div class="form-grid">
+              <div class="form-group">
                 <label class="form-label" for="edit-product-price">Price <span class="required">*</span></label>
-                <input type="number" id="edit-product-price" name="price" class="form-input" step="0.01" required>
-            </div>
-            <div class="form-group">
+                <input type="number" id="edit-product-price" name="price" class="form-input" step="0.01" required />
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="edit-product-old-price">Old Price (Optional)</label>
+                <input type="number" id="edit-product-old-price" name="old_price" class="form-input" step="0.01" />
+              </div>
+              <div class="form-group">
                 <label class="form-label" for="edit-product-stock">Stock <span class="required">*</span></label>
-                <input type="number" id="edit-product-stock" name="stock" class="form-input" required>
-            </div>
-            <div class="form-group">
-                <label class="form-label" for="edit-product-rating">Rating <span class="required">*</span></label>
-                <input type="number" id="edit-product-rating" name="rating" class="form-input" required>
+                <input type="number" id="edit-product-stock" name="stock" class="form-input" required />
+              </div>
             </div>
           </div>
-          
-           <div class="form-group" style="margin-top: 1rem;">
-            <label class="form-label" for="edit-product-description">Description</label>
-            <textarea id="edit-product-description" name="description" class="form-textarea" style="width: 100%; min-height: 80px;"></textarea>
+
+          <div class="form-section">
+            <h3 class="form-section-title">Media</h3>
+            <label class="form-label" for="edit-product-image">Update Main Image</label>
+            <div style="display: flex; align-items: center; gap: 1rem;">
+              <input type="file" id="edit-product-image" name="image" class="form-input" accept="image/*" style="flex: 1;">
+            </div>
+            <div id="current-image-preview"
+              style="margin-top: 1rem; font-size: 0.8rem; color: var(--admin-text); opacity: 0.8;"></div>
           </div>
 
-          <div class="form-group" style="margin-top: 1rem;">
-            <label class="form-label" for="edit-product-image">Change Image (Optional)</label>
-            <input type="file" id="edit-product-image" name="image" class="form-input" accept="image/*">
-            <div id="current-image-preview" style="margin-top: 0.5rem; font-size: 0.8rem; color: #666;"></div>
-          </div>
-
-          <div class="modal-footer" style="margin-top: 1.5rem; padding: 0;">
-            <!-- <button type="button" class="btn-secondary" onclick="closeEditProductModal()">Cancel</button> -->
+          <div class="form-actions">
+            <button type="button" class="btn-secondary" onclick="closeEditProductModal()">Cancel</button>
             <button type="submit" class="btn-primary">Save Changes</button>
           </div>
         </form>
       </div>
     </div>
+  </div>
   </div>
 
   <script src="../script.js"></script>

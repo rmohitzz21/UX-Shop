@@ -113,6 +113,18 @@ if ($stmt) {
     $stmt->bind_param("sssdssidssssss", $name, $description, $category, $price, $old_price, $imagePath, $stock, $rating, $related_products, $whats_included, $file_specification, $additional_images, $created_at, $updated_at);
     
     if ($stmt->execute()) {
+        $product_id = $conn->insert_id;
+
+        // Insert Media Files
+        if (!empty($uploadedMedia)) {
+            $mediaStmt = $conn->prepare("INSERT INTO product_media (product_id, file_path, file_type) VALUES (?, ?, ?)");
+            foreach ($uploadedMedia as $media) {
+                $mediaStmt->bind_param("iss", $product_id, $media['path'], $media['type']);
+                $mediaStmt->execute();
+            }
+            $mediaStmt->close();
+        }
+
         http_response_code(201);
         echo json_encode([
             "status" => "success",
