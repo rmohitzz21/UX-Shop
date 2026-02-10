@@ -1818,7 +1818,7 @@ body.shopAll .shop-all-filters .filter-pill {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 3px;
   width: auto;
   min-width: fit-content;
   padding: 10px 18px;

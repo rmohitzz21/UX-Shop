@@ -1546,12 +1546,18 @@ function handleCheckout(event) {
           saveCart();
           updateCartCount();
           
-          // Save order details for confirmation page (optional, or pass ID)
+          // Save order details for confirmation page
           const confirmationData = {
               ...orderPayload,
               orderNumber: data.orderNumber,
+              orderId: data.orderId,
               date: new Date().toISOString(),
-              status: 'Pending'
+              status: 'Pending',
+              // Use server values if provided (Source of Truth)
+              total: data.total !== undefined ? data.total : orderPayload.total,
+              subtotal: data.subtotal !== undefined ? data.subtotal : orderPayload.subtotal,
+              tax: data.tax !== undefined ? data.tax : orderPayload.tax,
+              shipping_cost: data.shipping_cost !== undefined ? data.shipping_cost : orderPayload.shipping_cost
           };
           localStorage.setItem('lastOrder', JSON.stringify(confirmationData));
           

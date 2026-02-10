@@ -13,6 +13,13 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
+// Authentication Check
+if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
+    http_response_code(403);
+    echo json_encode(["status" => "error", "message" => "Unauthorized access"]);
+    exit;
+}
+
 // Get form data
 $name = $_POST['name'] ?? '';
 $category = $_POST['category'] ?? '';

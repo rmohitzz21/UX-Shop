@@ -337,6 +337,7 @@ async function loadOrders() {
               <div class="action-buttons">
                 <button class="btn-small btn-edit" onclick="viewOrder('${order.id}')">View</button>
                 <button class="btn-small btn-edit" onclick="updateOrderStatus('${order.order_number}', '${order.status}', '${getOrderCustomerName(order).replace(/'/g, "\\'")}')">Update</button>
+                <button class="btn-small btn-delete" onclick="deleteOrder('${order.id}')">Delete</button>
               </div>
             </td>
           </tr>
@@ -346,6 +347,47 @@ async function loadOrders() {
   } catch(error) {
       console.error("Error loading orders:", error);
       ordersTable.innerHTML = '<tr><td colspan="8" class="empty-state" style="color:red">Failed to load orders from server.</td></tr>';
+  }
+}
+
+async function deleteOrder(orderId) {
+  if (!confirm('Are you sure you want to delete this order? This action cannot be undone.')) return;
+
+  const btn = document.querySelector(`button[onclick="deleteOrder('${orderId}')"]`);
+  let originalText = 'Delete';
+  if (btn) {
+    originalText = btn.innerText;
+    btn.disabled = true;
+    btn.innerText = 'Deleting...';
+  }
+
+  try {
+    const response = await fetch('../api/admin/order/delete.php', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ id: orderId })
+    });
+
+    const result = await response.json();
+
+    if (result.status === 'success') {
+      // Refresh data
+      loadOrders();
+      loadOverview(); // Update stats
+      showToast && showToast('Order deleted successfully', 'success'); // Assuming showToast exists globally or fallback
+    } else {
+      alert(result.message || 'Delete failed');
+    }
+
+  } catch (e) {
+    alert('Error deleting order: ' + e.message);
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerText = originalText;
+    }
   }
 }
 
@@ -669,7 +711,7 @@ async function viewOrder(orderId) {
               <img src="../${item.image || 'img/sticker.webp'}" alt="${item.name}" style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px;">
               <div>
                 <div style="font-weight: 600;">${item.name}</div>
-                ${item.size ? `<div style="font-size: 0.75rem; color: #666;">Size: ${item.size}</div>` : ''}
+                ${item.size ? `<div style="font-size: 0.75rem; color: #fff;">Size: ${item.size}</div>` : ''}
               </div>
             </div>
           </td>

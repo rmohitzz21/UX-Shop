@@ -38,7 +38,16 @@
 | Input Validation | ✅ Passed | Basic validation on all inputs. |
 | SQL Injection | ✅ Passed | Prepared statements used everywhere. |
 
+### 6. API Audit & Security Hardening (Completed)
+| Verification Step | Status | Notes |
+|-------------------|--------|-------|
+| Admin Authorization | ✅ Secured | Added strict role checks to product/order admin APIs. |
+| Order Integrity | ✅ Secured | Backend now calculates totals and validates stock. Frontend totals ignored. |
+| Account Deletion | ✅ Secured | Server-side password verification and data removal implemented. |
+| Frontend Integration | ✅ Updated | Checkout flow uses server-authoritative totals. |
+
 ### Pending / Next Steps
-1. **Frontend Order History**: Create `orders.php` to display past orders from the database (currently may be static/mock).
+1. **Address Management**: Re-implement backend address storage to allow users to manage saved addresses across devices. currently relies on localStorage/checkout entry.
 2. **Email Notifications**: Integrate generic SMTP mailer for order confirmation emails.
 3. **Payment Gateway**: "Card" and "UPI" are currently simulated. Integration with Razorpay/Stripe needed for real payments.
+4. **Frontend Order History**: Ensure `orders.php` fetches from `api/order/get.php` (already available).

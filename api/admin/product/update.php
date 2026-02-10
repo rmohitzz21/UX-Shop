@@ -5,9 +5,17 @@ header('Access-Control-Allow-Methods: POST');
 
 require_once '../../../includes/config.php';
 
+// Check request method
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
     echo json_encode(["status" => "error", "message" => "Method not allowed"]);
+    exit;
+}
+
+// Authentication Check
+if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
+    http_response_code(403);
+    echo json_encode(["status" => "error", "message" => "Unauthorized access"]);
     exit;
 }
 
