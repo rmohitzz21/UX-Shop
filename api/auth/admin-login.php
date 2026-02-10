@@ -38,6 +38,7 @@ if ($user) {
             "email" => $user['email'],
             "role" => $user['role']
         ]);
+        exit;
     }
 }
 

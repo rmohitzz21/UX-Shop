@@ -1100,7 +1100,7 @@ if (!isset($_SESSION['admin_id'])) {
         </div>
         <div class="admin-header-actions">
           <span id="admin-email-display"
-            style="color: var(--admin-text); opacity: 0.7; margin-right: 1rem; font-size: 0.875rem;"></span>
+            style="color: var(--admin-text); opacity: 0.7; margin-right: 1rem; font-size: 0.875rem;"><?php echo htmlspecialchars($_SESSION['admin_email'] ?? 'Admin'); ?></span>
           <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle theme" id="theme-toggle">
             <svg id="theme-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
               style="display: none;">

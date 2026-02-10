@@ -143,15 +143,6 @@
         })
         .then(data => {
           if (data.status === 'success') {
-            // Create admin session cache
-            const adminSession = {
-              email: data.data.email,
-              role: data.data.role,
-              loginTime: new Date().toISOString(),
-              isAdmin: true
-            };
-            localStorage.setItem('adminSession', JSON.stringify(adminSession));
-            
             successDiv.textContent = 'Login successful! Redirecting...';
             successDiv.style.display = 'block';
             
@@ -176,12 +167,10 @@
         });
       }
 
-      // Check if already logged in as admin
+      // Check if already logged in handled by PHP session, no JS needed
       document.addEventListener('DOMContentLoaded', function() {
-        const adminSession = JSON.parse(localStorage.getItem('adminSession'));
-        if (adminSession && adminSession.isAdmin) {
-          window.location.href = 'admin-dashboard.php';
-        }
+         // Optional: You could check an API endpoint here to see if session is valid 
+         // and redirect if so, but PHP handling on dashboard.php is sufficient.
       });
     </script>
     

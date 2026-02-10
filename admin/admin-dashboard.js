@@ -1,35 +1,31 @@
 // Admin Dashboard JavaScript
 
 // Check admin authentication
+// Check admin authentication handled by PHP
 function checkAdminAuth() {
-  const adminSession = JSON.parse(localStorage.getItem('adminSession'));
-  // Note: The primary check is now server-side in admin-dashboard.php
-  // This client-side check is just for immediate feedback/redirection
-  if (!adminSession || !adminSession.isAdmin) {
-    // If we are on the dashboard and local storage is empty, wait to see if server redirects.
-    // However, for better UX, we redirect here too.
-    window.location.href = 'admin-login.php';
-    return false;
-  }
-  return true;
+  return true; 
 }
 
 // Admin logout
+// Admin logout
 function handleAdminLogout() {
   if (confirm('Are you sure you want to logout?')) {
-    localStorage.removeItem('adminSession');
-    window.location.href = 'admin-login.php';
+    fetch('../api/auth/logout.php')
+      .then(() => {
+        window.location.href = 'admin-login.php';
+      })
+      .catch(err => {
+        console.error('Logout failed', err);
+        window.location.href = 'admin-login.php';
+      });
   }
 }
 
 // Initialize dashboard
 document.addEventListener('DOMContentLoaded', function() {
-  if (!checkAdminAuth()) return;
+  // Auth check is handled by PHP. If we are here, we are logged in.
   
-  const adminSession = JSON.parse(localStorage.getItem('adminSession'));
-  if (adminSession && adminSession.email) {
-    document.getElementById('admin-email-display').textContent = adminSession.email;
-  }
+  // Setup tab navigation
   
   // Setup tab navigation
   setupTabNavigation();
