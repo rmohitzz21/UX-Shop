@@ -31,6 +31,7 @@ if ($user = $result->fetch_assoc()) {
         $_SESSION['user_id'] = $user['id'];
         $_SESSION['email'] = $user['email'];
         $_SESSION['role'] = $user['role'];
+        $_SESSION['username'] = $user['first_name'] . ' ' . $user['last_name'];
         
         // Generate token for mobile/client app compatibility
         $token = bin2hex(random_bytes(32));

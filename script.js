@@ -970,13 +970,17 @@ function updateUserMenu() {
       const userName = menu.querySelector('.user-name');
       const userAvatar = menu.querySelector('.user-avatar');
       
-      if (userName) {
+      // Update content only if placeholder or empty, to respect server rendering
+      if (userName && (!userName.textContent || userName.textContent === 'User')) {
         userName.textContent = userSession.firstName || userSession.name || 'User';
       }
       
       if (userAvatar) {
-        const initial = (userSession.firstName || userSession.name || 'U').charAt(0).toUpperCase();
-        userAvatar.textContent = initial;
+         // Only update if empty to avoid overwrite
+         if (!userAvatar.textContent.trim()) {
+            const initial = (userSession.firstName || userSession.name || 'U').charAt(0).toUpperCase();
+            userAvatar.textContent = initial;
+         }
       }
     });
     
@@ -984,14 +988,45 @@ function updateUserMenu() {
       btn.style.display = 'none';
     });
   } else {
-    // Hide user menu, show sign in button
-    userMenus.forEach(menu => {
-      menu.style.display = 'none';
-    });
+    // No local storage session found.
+    // Check if server rendered the user menu (indicating PHP session is active)
+    // If nav-user exists BUT sign-in button does NOT, it's a server-rendered auth state.
+    let serverRenderedAuth = false;
     
-    signInButtons.forEach(btn => {
-      btn.style.display = 'inline-flex';
-    });
+    if (userMenus.length > 0 && signInButtons.length === 0) {
+        serverRenderedAuth = true;
+    }
+    
+    if (serverRenderedAuth) {
+        // We are logged in on the server, but localStorage is empty.
+        // Keep the user menu visible and attempt to sync localStorage
+        userMenus.forEach(menu => {
+            menu.style.display = 'flex';
+            
+            const userNameEl = menu.querySelector('.user-name');
+            const userName = userNameEl ? userNameEl.textContent.trim() : 'User';
+            
+            // Re-hydrate session if we have a name
+            if (userName && userName !== 'User') {
+                 const derivedSession = {
+                     name: userName,
+                     firstName: userName.split(' ')[0], 
+                     loginTime: new Date().toISOString(),
+                     source: 'server-hydrated'
+                 };
+                 localStorage.setItem('userSession', JSON.stringify(derivedSession));
+            }
+        });
+    } else {
+        // Standard client-side hide (Logged out and no server auth detected)
+        userMenus.forEach(menu => {
+          menu.style.display = 'none';
+        });
+        
+        signInButtons.forEach(btn => {
+          btn.style.display = 'inline-flex';
+        });
+    }
   }
 }
 
@@ -1309,11 +1344,22 @@ function handleSignIn(event) {
 
 // Sign out handler
 function handleSignOut() {
-  clearUserSession();
-  showToast('Signed out successfully', 'success');
-  setTimeout(() => {
-    window.location.href = 'index.php';
-  }, 1000);
+  // Call server logout API to destroy PHP session
+  fetch('api/auth/logout.php')
+    .then(response => {
+        // Regardless of server response, clear client state
+        clearUserSession();
+        showToast('Signed out successfully', 'success');
+        setTimeout(() => {
+            window.location.href = 'index.php';
+        }, 1000);
+    })
+    .catch(err => {
+        console.error('Logout error:', err);
+        // Fallback
+        clearUserSession();
+        window.location.href = 'index.php';
+    });
 }
 
 // Contact form handler
