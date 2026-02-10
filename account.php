@@ -380,18 +380,29 @@
     });
 
     function loadUserProfile() {
-      const userSession = JSON.parse(localStorage.getItem('userSession')) || {};
-      if (userSession.email) {
-        document.getElementById('profile-name').textContent = userSession.name || userSession.firstName || 'User';
-        document.getElementById('profile-email').textContent = userSession.email;
-        document.getElementById('profile-initial').textContent = (userSession.firstName || userSession.name || 'U').charAt(0).toUpperCase();
+      fetch('api/user/profile.php')
+      .then(response => response.json())
+      .then(data => {
+          if (data.status === 'success') {
+              const user = data.data;
+              const fullName = `${user.first_name} ${user.last_name}`;
+              
+              document.getElementById('profile-name').textContent = fullName;
+              document.getElementById('profile-email').textContent = user.email;
+              document.getElementById('profile-initial').textContent = user.first_name.charAt(0).toUpperCase();
 
-        // Fill form
-        document.getElementById('first-name').value = userSession.firstName || '';
-        document.getElementById('last-name').value = userSession.lastName || '';
-        document.getElementById('email').value = userSession.email || '';
-        document.getElementById('phone').value = userSession.phone || '';
-      }
+              // Fill form
+              document.getElementById('first-name').value = user.first_name || '';
+              document.getElementById('last-name').value = user.last_name || '';
+              document.getElementById('email').value = user.email || '';
+              document.getElementById('phone').value = user.phone || '';
+          } else {
+             // Handle unauthorized or error - maybe redirect to login?
+             console.error('Failed to load profile:', data.message);
+             // Optional: window.location.href = 'signin.php';
+          }
+      })
+      .catch(error => console.error('Error loading profile:', error));
     }
 
     function loadAddresses() {
@@ -473,15 +484,41 @@
       // Profile form
       document.getElementById('profile-form').addEventListener('submit', function (e) {
         e.preventDefault();
-        const userSession = JSON.parse(localStorage.getItem('userSession')) || {};
-        userSession.firstName = this.firstName.value;
-        userSession.lastName = this.lastName.value;
-        userSession.name = `${this.firstName.value} ${this.lastName.value}`;
-        userSession.phone = this.phone.value;
-        localStorage.setItem('userSession', JSON.stringify(userSession));
-        updateUserMenu();
-        loadUserProfile();
-        showToast('Profile updated successfully!', 'success');
+        
+        const formData = {
+            firstName: this.firstName.value,
+            lastName: this.lastName.value,
+            phone: this.phone.value
+        };
+
+        fetch('api/user/update_profile.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(formData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                showToast('Profile updated successfully!', 'success');
+                // Update local session if needed, or just reload profile
+                // Update localStorage to keep client-side consistent if used elsewhere
+                const userSession = JSON.parse(localStorage.getItem('userSession')) || {};
+                userSession.firstName = formData.firstName;
+                userSession.lastName = formData.lastName;
+                userSession.name = `${formData.firstName} ${formData.lastName}`;
+                userSession.phone = formData.phone;
+                localStorage.setItem('userSession', JSON.stringify(userSession));
+                
+                updateUserMenu();
+                loadUserProfile();
+            } else {
+                showToast(data.message || 'Failed to update profile', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error updating profile:', error);
+            showToast('Error updating profile', 'error');
+        });
       });
 
       // Password form

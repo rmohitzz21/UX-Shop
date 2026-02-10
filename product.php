@@ -105,28 +105,33 @@ function getRelatedProducts($conn, $product) {
                 $r_img = !empty($rel['image']) ? $rel['image'] : 'img/sticker.webp';
                 $r_rating = $rel['rating'] ?: '0.0';
                 $r_desc = substr(htmlspecialchars($rel['description']), 0, 80) . '...';
+                $r_cat = htmlspecialchars($rel['category']);
                 
                 // JS Safe strings
                 $jsRName = addslashes($rel['name']);
+                $jsRImage = addslashes($rel['image']);
+                $jsRCategory = addslashes($rel['category']);
                 
                 $related_html .= "
-                <div class='related-card'>
-                  <div class='card-img'>
-                    <a href='product.php?id=$r_id'><img src='$r_img' alt='$r_name' /></a>
-                  </div>
-                  <div class='card-body'>
-                    <div class='title-row'>
-                      <h4><a href='product.php?id=$r_id' style='text-decoration:none; color:inherit;'>$r_name</a></h4>
-                      <span class='rating'>⭐ $r_rating</span>
+                  <article class='product-card' data-category='$r_cat'>
+                    <div class='product-img'>
+                      <img src='$r_img' alt='$r_name' onerror=\"this.src='img/sticker.webp'\" />
+                      <span class='product-tag'>$r_cat</span>
                     </div>
-                    <p class='desc'>$r_desc</p>
-                    <div class='price-row'>
-                      <span class='price'>$$r_price</span>
-                      " . ($r_old ? "<span class='old'>$$r_old</span>" : "") . "
+                    <div class='product-body'>
+                      <h3>$r_name</h3>
+                      <p style='margin-bottom: 0.5rem; font-size: 0.95rem;'>$r_desc</p>
+                      
+                      <div class='product-meta'>
+                        <div class='product-price'>$$r_price " . ($r_old ? "<span>$$r_old</span>" : "") . "</div>
+                        <div class='product-rating'>★ $r_rating</div>
+                      </div>
+                      <div class='product-actions'>
+                        <button onclick=\"addToCart('$r_id', null, 1, {name: '$jsRName', price: {$rel['price']}, image: '$jsRImage', category: '$jsRCategory'})\" class='btn-primary small' aria-label='Add to cart'>Add to Cart</button>
+                        <a href='product.php?id=$r_id' class='btn-ghost small'>View Details</a>
+                      </div>
                     </div>
-                    <button class='buy-btn' onclick=\"addToCart('$r_id', null, 1, {name: '$jsRName', price: {$rel['price']}, image: '$r_img'})\" style='margin-top: 10px;'>Add to Cart</button>
-                  </div>
-                </div>";
+                  </article>";
             }
         }
     }
@@ -362,7 +367,7 @@ $related_html = getRelatedProducts($conn, $product);
     <?php if ($related_html): ?>
     <section class="related-section">
       <h2 class="section-title">Related Products</h2>
-      <div class="related-grid">
+      <div class="product-grid">
         <?php echo $related_html; ?>
       </div>
     </section>

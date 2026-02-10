@@ -1,3 +1,4 @@
+<?php require_once 'includes/config.php'; ?>
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -144,9 +145,62 @@
 
           <!-- PRODUCT GRID (reuses existing .product-grid / .product-card styles) -->
           <div class="product-grid shop-all-grid">
-            <!-- 1 -->
-            <!-- Products will be loaded dynamically via script.js -->
-            <p id="products-loading" style="grid-column: 1/-1; text-align: center;">Loading products...</p>
+            <?php
+            // Fetch all active products
+            $sql = "SELECT * FROM products WHERE is_active = 1 ORDER BY created_at DESC";
+            $result = $conn->query($sql);
+
+            if ($result && $result->num_rows > 0) {
+                while($row = $result->fetch_assoc()) {
+                    $id = $row['id'];
+                    $name = htmlspecialchars($row['name']);
+                    // JS Safe strings
+                    $jsName = addslashes($row['name']);
+                    $jsImage = addslashes($row['image']);
+                    $jsCategory = addslashes($row['category']);
+                    
+                    $price = number_format($row['price'], 2);
+                    $old_price = !empty($row['old_price']) ? number_format($row['old_price'], 2) : '';
+                    $image = htmlspecialchars($row['image']);
+                    
+                    // Fallback image handling
+                    $imgSrc = !empty($row['image']) ? $row['image'] : 'img/sticker.webp';
+                    
+                    $category = htmlspecialchars($row['category']);
+                    $rating = $row['rating'] ?: '0.0';
+                    
+                    // Truncate description - Match index.php logic
+                    $description = htmlspecialchars($row['description']);
+                    if (strlen($description) > 100) {
+                        $description = substr($description, 0, 100) . '...';
+                    }
+                    
+                    echo "
+                    <article class='product-card' data-category='$category'>
+                      <div class='product-img'>
+                        <img src='$imgSrc' alt='$name' onerror=\"this.src='img/sticker.webp'\" />
+                        <span class='product-tag'>$category</span>
+                      </div>
+                      <div class='product-body'>
+                        <h3>$name</h3>
+                        <p style='margin-bottom: 0.5rem; font-size: 0.95rem;'>$description</p>
+                        
+                        <div class='product-meta'>
+                          <div class='product-price'>$$price " . ($old_price ? "<span>$$old_price</span>" : "") . "</div>
+                          <div class='product-rating'>★ $rating</div>
+                        </div>
+                        <div class='product-actions'>
+                          <button onclick=\"addToCart('$id', null, 1, {name: '$jsName', price: " . $row['price'] . ", image: '$jsImage', category: '$jsCategory'})\" class='btn-primary small' aria-label='Add to cart' " . ($row['stock'] <= 0 ? 'disabled' : '') . ">Add to Cart</button>
+                          <a href='product.php?id=$id' class='btn-ghost small'>View Details</a>
+                        </div>
+                      </div>
+                    </article>
+                    ";
+                }
+            } else {
+                echo "<p style='grid-column: 1/-1; text-align: center;'>No products found.</p>";
+            }
+            ?>
           </div>
         </section>
 

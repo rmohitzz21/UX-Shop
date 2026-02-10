@@ -174,60 +174,47 @@ navLinks.forEach((link) => {
 
 
 
-    document.addEventListener("DOMContentLoaded", async function () {
+/* Helper: Generate Product Card HTML (matches index.php style) */
+function generateProductCardHTML(product) {
+    const category = product.category || 'Uncategorized';
+    
+    // Safety for JS strings in onclick
+    const safeName = (product.name || '').replace(/'/g, "\\'");
+    const safeImage = (product.image || '').replace(/'/g, "\\'");
+    const safeCategory = (category || '').replace(/'/g, "\\'");
+    
+    // Formatting
+    const price = Number(product.price) || 0;
+    const oldPrice = product.old_price ? Number(product.old_price) : null;
+    const desc = (product.description || '');
+
+    return `
+    <article class="product-card" data-category="${category}">
+      <div class="product-img">
+        <img src="${product.image}" alt="${product.name}" onerror="this.src='img/sticker.webp'" />
+        <span class="product-tag">${category}</span>
+      </div>
+      <div class="product-body">
+        <h3>${product.name}</h3>
+        <p style="margin-bottom: 0.5rem; font-size: 0.95rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">${desc}</p>
+        <div class="product-meta">
+          <div class="product-price">$${price.toLocaleString()} ${oldPrice ? `<span>$${oldPrice.toLocaleString()}</span>` : ''}</div>
+          <div class="product-rating">★ ${product.rating || '0.0'}</div>
+        </div>
+        <div class="product-actions">
+          <button onclick="addToCart('${product.id}', null, 1, {name: '${safeName}', price: ${price}, image: '${safeImage}', category: '${safeCategory}'})" class="btn-primary small" aria-label="Add to cart" ${product.stock <= 0 ? 'disabled' : ''}>Add to Cart</button>
+          <a href="product.php?id=${product.id}" class="btn-ghost small">View Details</a>
+        </div>
+      </div>
+    </article>
+    `;
+}
+
+document.addEventListener("DOMContentLoaded", async function () {
   // only run on shopAll page
   if (!document.body.classList.contains("shopAll")) return;
 
-  const grid = document.querySelector(".product-grid");
-  
-  // Fetch products from API and wait for it to finish BEFORE selecting cards
-  try {
-    const response = await fetch('api/product/list.php');
-    if (response.ok) {
-      const result = await response.json();
-      if (result.status === 'success' && result.data.length > 0) {
-        // Clear existing static content if any (or loading state)
-        grid.innerHTML = result.data.map(product => {
-           // Map API category to CSS class/data attribute format if needed
-           const category = product.category || 'Uncategorized';
-           
-           // Escape single quotes for JS strings
-           const safeName = (product.name || '').replace(/'/g, "\\'");
-           const safeImage = (product.image || '').replace(/'/g, "\\'");
-           const price = Number(product.price) || 0;
-           
-           return `
-            <article class="product-card" data-category="${category}">
-              <div class="product-img">
-                <img src="${product.image}" alt="${product.name}" onerror="this.src='img/sticker.webp'" />
-                <span class="product-tag">${category}</span>
-              </div>
-              <div class="product-body">
-                <h3>${product.name}</h3>
-                <p style="font-size: 0.9rem; color: #666; margin-bottom: 0.5rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">${product.description || ''}</p>
-                <!-- <p>Stock: ${product.stock > 0 ? 'In Stock' : 'Out of Stock'}</p> -->
-                <div class="product-meta">
-                  <div class="product-price">$${price.toLocaleString()} <span>${product.old_price ? '$'+Number(product.old_price).toLocaleString() : ''}</span></div>
-                  <div class="product-rating">★ ${product.rating || '0.0'}</div>
-                </div>
-                <div class="product-actions">
-                  <button onclick="addToCart('${product.id}', null, 1, {name: '${safeName}', price: ${price}, image: '${safeImage}', category: '${category}'})" class="btn-primary small" aria-label="Add to cart" ${product.stock <= 0 ? 'disabled' : ''}>Add to Cart</button>
-                  <a href="product.php?id=${product.id}" class="btn-ghost small">View Details</a>
-                </div>
-              </div>
-            </article>
-           `;
-        }).join('');
-      } else {
-        grid.innerHTML = '<p style="text-align:center; grid-column: 1/-1;">No products found.</p>';
-      }
-    }
-  } catch (error) {
-    console.error('Error loading products:', error);
-    grid.innerHTML = '<p style="text-align:center; grid-column: 1/-1;">Error loading products.</p>';
-  }
-
-  // NOW select the elements, after they have been injected into the DOM
+  // NOW select the elements, after they have been injected into the DOM (via PHP)
   const filterButtons = Array.from(document.querySelectorAll(".shop-all-filters .filter-pill"));
   const productCards = Array.from(document.querySelectorAll(".product-card"));
 
