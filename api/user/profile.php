@@ -10,16 +10,19 @@ if (!isset($_SESSION['user_id'])) {
 
 $user_id = $_SESSION['user_id'];
 
-// Fetch user data
+// Get ONLY necessary fields for profile form
 $stmt = $conn->prepare("SELECT first_name, last_name, email, phone FROM users WHERE id = ?");
 $stmt->bind_param("i", $user_id);
-$stmt->execute();
-$result = $stmt->get_result();
 
-if ($user = $result->fetch_assoc()) {
-    echo json_encode(['status' => 'success', 'data' => $user]);
+if ($stmt->execute()) {
+    $result = $stmt->get_result();
+    if ($user = $result->fetch_assoc()) {
+        echo json_encode(['status' => 'success', 'data' => $user]);
+    } else {
+        echo json_encode(['status' => 'error', 'message' => 'User not found']);
+    }
 } else {
-    echo json_encode(['status' => 'error', 'message' => 'User not found']);
+    echo json_encode(['status' => 'error', 'message' => 'Database error']);
 }
 
 $stmt->close();

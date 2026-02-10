@@ -397,9 +397,8 @@
               document.getElementById('email').value = user.email || '';
               document.getElementById('phone').value = user.phone || '';
           } else {
-             // Handle unauthorized or error - maybe redirect to login?
-             console.error('Failed to load profile:', data.message);
-             // Optional: window.location.href = 'signin.php';
+             // If unauthorized or error, we might be logged out or just strictly local dev
+             console.log('Could not load profile from server:', data.message);
           }
       })
       .catch(error => console.error('Error loading profile:', error));
@@ -500,8 +499,8 @@
         .then(data => {
             if (data.status === 'success') {
                 showToast('Profile updated successfully!', 'success');
-                // Update local session if needed, or just reload profile
-                // Update localStorage to keep client-side consistent if used elsewhere
+                
+                // Update local storage to keep client-side UI in sync immediately
                 const userSession = JSON.parse(localStorage.getItem('userSession')) || {};
                 userSession.firstName = formData.firstName;
                 userSession.lastName = formData.lastName;
@@ -510,7 +509,7 @@
                 localStorage.setItem('userSession', JSON.stringify(userSession));
                 
                 updateUserMenu();
-                loadUserProfile();
+                loadUserProfile(); // Refresh from server to be sure
             } else {
                 showToast(data.message || 'Failed to update profile', 'error');
             }

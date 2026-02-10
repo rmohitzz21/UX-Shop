@@ -16,23 +16,25 @@ if (!$input) {
     exit;
 }
 
-// Validation
-$firstName = $input['firstName'] ?? '';
-$lastName = $input['lastName'] ?? '';
-$phone = $input['phone'] ?? '';
+// Basic validation: name cannot be empty
+$firstName = trim($input['firstName'] ?? '');
+$lastName = trim($input['lastName'] ?? '');
+$phone = trim($input['phone'] ?? '');
 
 if (empty($firstName) || empty($lastName)) {
     echo json_encode(['status' => 'error', 'message' => 'First and Last name are required']);
     exit;
 }
 
-// Update user data
+// Prepare update query
 $stmt = $conn->prepare("UPDATE users SET first_name = ?, last_name = ?, phone = ? WHERE id = ?");
 $stmt->bind_param("sssi", $firstName, $lastName, $phone, $user_id);
 
 if ($stmt->execute()) {
-    // Update session data
+    // Update session data as well
     $_SESSION['username'] = $firstName . ' ' . $lastName;
+    $_SESSION['first_name'] = $firstName;
+    $_SESSION['last_name'] = $lastName;
     
     echo json_encode(['status' => 'success', 'message' => 'Profile updated successfully']);
 } else {
