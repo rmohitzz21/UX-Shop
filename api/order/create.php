@@ -49,7 +49,8 @@ try {
     foreach ($data['items'] as $item) {
         $product_id = intval($item['id']);
         $quantity = intval($item['quantity']);
-        $size = isset($item['size']) ? $conn->real_escape_string($item['size']) : '';
+        // Use raw size for prepared statements to avoid double escaping
+        $size = isset($item['size']) ? $item['size'] : '';
         
         if ($quantity <= 0) continue;
 
@@ -154,9 +155,14 @@ try {
     $order_id = $conn->insert_id;
     $stmt->close();
 
-    // 7. Insert Items
+    // 7. Insert Items & Remove from Cart
     $stmt_item = $conn->prepare("INSERT INTO order_items (order_id, product_id, quantity, price, size) VALUES (?, ?, ?, ?, ?)");
+    
+    // Check for size matching (handling empty/null)
+    $delete_cart = $conn->prepare("DELETE FROM cart WHERE user_id = ? AND product_id = ? AND (size = ? OR size = '' OR size IS NULL) AND product_type = ?");
+    
     foreach ($order_items_data as $item) {
+        // Insert into order_items
         $stmt_item->bind_param("iiids", 
             $order_id, 
             $item['product_id'], 
@@ -167,8 +173,16 @@ try {
         if (!$stmt_item->execute()) {
             throw new Exception("Error inserting order items");
         }
+        
+        // Remove from cart
+        if ($delete_cart) {
+             $p_type = isset($item['type']) ? $item['type'] : 'physical';
+             $delete_cart->bind_param("iiss", $user_id, $item['product_id'], $item['size'], $p_type);
+             $delete_cart->execute();
+        }
     }
     $stmt_item->close();
+    if ($delete_cart) $delete_cart->close();
 
     // 8. Handle "Save Address" (Optional feature from checkout)
     if (!empty($data['saveAddress']) && !empty($data['shipping'])) {

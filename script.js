@@ -531,6 +531,39 @@ document.querySelectorAll(".sizes button").forEach(btn => {
 
 let cart = JSON.parse(localStorage.getItem('cart')) || [];
 
+// Initialize Cart on Load
+document.addEventListener('DOMContentLoaded', function() {
+  const userSession = getUserSession();
+  if (userSession && userSession.id) {
+     // Load from API if logged in
+     fetchCartFromAPI();
+  } else {
+     // LocalStorage already loaded
+     updateCartCount();
+     if (window.location.pathname.includes('cart.php')) loadCartPage();
+  }
+});
+
+function fetchCartFromAPI() {
+    fetch('api/cart/list.php')
+      .then(res => {
+         if(res.status === 401) return []; // Guest/Expired
+         return res.json();
+      })
+      .then(data => {
+         if(data.status === 'success') {
+             cart = data.data; // Sync global cart variable
+             saveCart(); // Optional: Keep local storage in sync or just rely on memory? 
+                         // Better to just update memory for logged in users to avoid conflicts.
+                         // But for now, let's keep cart variable as source of truth.
+             updateCartCount();
+             if (window.location.pathname.includes('cart.php')) loadCartPage();
+             if (window.location.pathname.includes('checkout.php')) loadCheckoutPage();
+         }
+      })
+      .catch(err => console.error('Error fetching cart:', err));
+}
+
 // Product database (temporary - replace with API call later)
 const products = {
   'sticker-pack-001': { id: 'sticker-pack-001', name: 'Designer Sticker Pack', price: 499, oldPrice: 899, image: 'img/sticker.webp', category: 'Stickers' },
@@ -560,32 +593,65 @@ function addToCart(productId, size = null, quantity = 1, explicitDetails = null,
   // Get product_type priority: Argument > localStorage > default
   const product_type = productFormat || localStorage.getItem('product_type') || 'physical';
   
-  const existingIndex = cart.findIndex(
-    item => item.id === productId && item.size === size && item.product_type === product_type
-  );
-  
-  if (existingIndex > -1) {
-    cart[existingIndex].quantity += quantity;
+  const userSession = getUserSession();
+
+  if (userSession && userSession.id) {
+      // LOGGED IN: Use API
+      const payload = {
+          product_id: productId,
+          quantity: quantity,
+          size: size,
+          product_type: product_type
+      };
+
+      fetch('api/cart/add.php', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+      })
+      .then(res => res.json())
+      .then(data => {
+          if (data.status === 'success') {
+              showToast('Item added to cart!', 'success');
+              fetchCartFromAPI(); // Refresh cart
+          } else {
+              showToast(data.message || 'Failed to add item', 'error');
+          }
+      })
+      .catch(err => {
+          console.error(err);
+          showToast('Error adding item', 'error');
+      });
+
   } else {
-    cart.push({
-      id: productId,
-      name: product.name,
-      price: product.price,
-      image: product.image,
-      size: size,
-      quantity: quantity,
-      product_type: product_type,
-      description: product.description
-    });
-  }
-  
-  saveCart();
-  updateCartCount();
-  showToast('Item added to cart!', 'success');
-  
-  // If on cart page, refresh it
-  if (window.location.pathname.includes('cart.php')) {
-    loadCartPage();
+      // GUEST: Use LocalStorage
+      const existingIndex = cart.findIndex(
+        item => item.id === productId && item.size === size && item.product_type === product_type
+      );
+      
+      if (existingIndex > -1) {
+        cart[existingIndex].quantity += quantity;
+      } else {
+        cart.push({
+          id: productId,
+          name: product.name,
+          price: product.price,
+          image: product.image,
+          size: size,
+          quantity: quantity,
+          product_type: product_type,
+          description: product.description
+        });
+      }
+      
+      saveCart();
+      updateCartCount();
+      showToast('Item added to cart!', 'success');
+      
+      // If on cart page, refresh it
+      if (window.location.pathname.includes('cart.php')) {
+        loadCartPage();
+      }
   }
 }
 
@@ -597,42 +663,102 @@ function normalizeSize(s) {
 
 // Remove from cart
 function removeFromCart(productId, size = null) {
-  cart = cart.filter(item => {
-      // Keep item if ID doesn't match OR size doesn't match
-      const idMatch = String(item.id) === String(productId);
-      const sizeMatch = normalizeSize(item.size) === normalizeSize(size);
-      return !(idMatch && sizeMatch); 
-  });
-  saveCart();
-  updateCartCount();
-  showToast('Item removed from cart', 'success');
+  const userSession = getUserSession();
   
-  if (window.location.pathname.includes('cart.php')) {
-    loadCartPage();
+  // Find item to get its product_type (needed for API)
+  const item = cart.find(i => String(i.id) === String(productId) && normalizeSize(i.size) === normalizeSize(size));
+  const product_type = item ? (item.product_type || 'physical') : 'physical';
+
+  if (userSession && userSession.id) {
+      // LOGGED IN: API
+      fetch('api/cart/remove.php', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+              product_id: productId,
+              size: size,
+              product_type: product_type
+          })
+      })
+      .then(res => res.json())
+      .then(data => {
+          if(data.status === 'success') {
+              showToast('Item removed from cart', 'success');
+              fetchCartFromAPI();
+          } else {
+              showToast('Failed to remove item', 'error');
+          }
+      });
+  } else {
+      // GUEST: LocalStorage
+      cart = cart.filter(item => {
+          // Keep item if ID doesn't match OR size doesn't match
+          const idMatch = String(item.id) === String(productId);
+          const sizeMatch = normalizeSize(item.size) === normalizeSize(size);
+          return !(idMatch && sizeMatch); 
+      });
+      saveCart();
+      updateCartCount();
+      showToast('Item removed from cart', 'success');
+      
+      if (window.location.pathname.includes('cart.php')) {
+        loadCartPage();
+      }
   }
 }
 
 // Update cart item quantity
 function updateCartQuantity(productId, size, newQuantity) {
-  const item = cart.find(item => {
-      const idMatch = String(item.id) === String(productId);
-      const sizeMatch = normalizeSize(item.size) === normalizeSize(size);
-      return idMatch && sizeMatch;
-  });
+  const userSession = getUserSession();
   
-  if (item) {
-    if (newQuantity <= 0) {
+  if (newQuantity <= 0) {
       removeFromCart(productId, size);
-    } else {
-      item.quantity = newQuantity;
-      saveCart();
-      updateCartCount();
-      if (window.location.pathname.includes('cart.php')) {
-        loadCartPage();
-      }
-    }
+      return;
+  }
+
+  // Find item to get its product_type (needed for API)
+  const item = cart.find(i => String(i.id) === String(productId) && normalizeSize(i.size) === normalizeSize(size));
+  const product_type = item ? (item.product_type || 'physical') : 'physical';
+  
+  if (userSession && userSession.id) {
+     // LOGGED IN: API
+     fetch('api/cart/update.php', {
+         method: 'POST',
+         headers: {'Content-Type': 'application/json'},
+         body: JSON.stringify({
+             product_id: productId,
+             quantity: newQuantity,
+             size: size,
+             product_type: product_type
+         })
+     })
+     .then(res => res.json())
+     .then(data => {
+         if(data.status === 'success') {
+             fetchCartFromAPI(); // Refresh to update totals etc
+         } else {
+             showToast('Failed to update quantity', 'error');
+         }
+     });
+
   } else {
-      console.warn("Item not found for update:", productId, size);
+      // GUEST: LocalStorage
+      const item = cart.find(item => {
+          const idMatch = String(item.id) === String(productId);
+          const sizeMatch = normalizeSize(item.size) === normalizeSize(size);
+          return idMatch && sizeMatch;
+      });
+      
+      if (item) {
+          item.quantity = newQuantity;
+          saveCart();
+          updateCartCount();
+          if (window.location.pathname.includes('cart.php')) {
+            loadCartPage();
+          }
+      } else {
+          console.warn("Item not found for update:", productId, size);
+      }
   }
 }
 
@@ -767,9 +893,19 @@ async function loadCartPage() {
   // 2. If we lack data, show loading.
   // 3. Always fetch fresh data in background to ensure price accuracy.
 
+  // Optimization: If cart items already have details (from API list), use them directly
+  // This avoids the "Updating..." state and refresh requirement
+  const hasDetails = cart.length > 0 && cart[0].name && cart[0].price && cart[0].image;
+  
   const hasCache = Object.keys(globalProductDetailsCache).length > 0;
 
-  if (hasCache) {
+  if (hasDetails) {
+      // Map cart items to a structure compatible with renderCartHTML
+      // renderCartHTML expects a source object keyed by ID
+      const source = {};
+      cart.forEach(item => source[item.id] = item);
+      renderCartHTML(source);
+  } else if (hasCache) {
       renderCartHTML(globalProductDetailsCache);
   } else {
       cartItemsContainer.innerHTML = '<p style="text-align:center; padding:20px;">Updating cart details...</p>';
@@ -807,31 +943,75 @@ function loadCheckoutPage() {
   if (!checkoutItemsContainer) return;
   
   if (cart.length === 0) {
-    window.location.href = 'cart.php';
-    return;
+    // If not logged in and empty local storage, or logged in and empty DB cart
+    // But wait, if we are fetching API, cart might be empty momentarily.
+    // So let's skip redirect if we are potentially waiting for data?
+    // Actually, handling empty cart redirect should be done carefully.
+    const userSession = getUserSession();
+    if (!userSession && cart.length === 0) {
+        window.location.href = 'cart.php';
+        return;
+    } 
+    // If logged in, let's show empty state or redirect after a short delay if truly empty
+    if (userSession && cart.length === 0) {
+         checkoutItemsContainer.innerHTML = '<p>Loading your cart...</p>';
+         // If genuinely empty after fetch, the fetch callback will not re-trigger this if empty?
+         // Actually fetchCart updates cart. If cart becomes [] then we redirect.
+         // Let's just return for now.
+         return;
+    }
   }
   
   checkoutItemsContainer.innerHTML = cart.map(item => `
     <div class="checkout-item">
-      <img src="${item.image}" alt="${item.name}" class="checkout-item-image" />
+      <img src="${item.image}" alt="${item.name}" class="checkout-item-image" onerror="this.src='img/sticker.webp'" />
       <div class="checkout-item-info">
         <div class="checkout-item-name">${item.name}</div>
         <div class="checkout-item-details">${item.size ? `Size: ${item.size} • ` : ''}Qty: ${item.quantity}</div>
       </div>
-      <div class="checkout-item-price">$${item.price * item.quantity}</div>
+      <div class="checkout-item-price">$${(item.price * item.quantity).toLocaleString()}</div>
     </div>
   `).join('');
   
   // Update totals
   const subtotal = getCartTotal();
-  const shipping = 50;
+  // Check if any physical items exist to determine shipping
+  const hasPhysicalItems = cart.some(item => (item.product_type === 'physical' || !item.product_type));
+  const shipping = (subtotal > 0 && hasPhysicalItems) ? 50 : 0;
+  
   const tax = Math.round(subtotal * 0.18);
   const total = subtotal + shipping + tax;
   
-  document.getElementById('checkout-subtotal').textContent = `$${subtotal}`;
+  document.getElementById('checkout-subtotal').textContent = `$${subtotal.toLocaleString()}`;
   document.getElementById('checkout-shipping').textContent = `$${shipping}`;
-  document.getElementById('checkout-tax').textContent = `$${tax}`;
-  document.getElementById('checkout-total').textContent = `$${total}`;
+  document.getElementById('checkout-tax').textContent = `$${tax.toLocaleString()}`;
+  document.getElementById('checkout-total').textContent = `$${total.toLocaleString()}`;
+
+  // Handle COD availability
+  const hasDigitalProduct = cart.some(item => item.product_type === 'digital');
+  const codOption = document.getElementById('cod-option');
+  const codRadio = document.getElementById('cod-radio');
+  const codMessage = document.getElementById('cod-disabled-message');
+
+  if (hasDigitalProduct) {
+      if (codRadio) { codRadio.disabled = true; codRadio.checked = false; }
+      if (codMessage) codMessage.style.display = 'block';
+      if (codOption) {
+          codOption.style.opacity = '0.6';
+          codOption.style.cursor = 'not-allowed';
+          codOption.style.pointerEvents = 'none';
+      }
+      const cardRadio = document.querySelector('input[name="paymentMethod"][value="card"]');
+      if (cardRadio) cardRadio.checked = true;
+  } else {
+      if (codRadio) codRadio.disabled = false;
+      if (codMessage) codMessage.style.display = 'none';
+      if (codOption) {
+          codOption.style.opacity = '1';
+          codOption.style.cursor = 'pointer';
+          codOption.style.pointerEvents = 'auto';
+      }
+  }
 }
 
 // Toast notification with improved accessibility
@@ -1308,9 +1488,36 @@ function handleSignIn(event) {
       localStorage.setItem('accessToken', tokens.access_token);
       localStorage.setItem('refreshToken', tokens.refresh_token);
       
-      successDiv.textContent = 'Sign in successful! Redirecting...';
-      successDiv.style.display = 'block';
-      handleSignInRedirect();
+      // Merge local cart if exists
+      const localCart = JSON.parse(localStorage.getItem('cart')) || [];
+      if (localCart.length > 0) {
+          fetch('api/cart/merge.php', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ cart: localCart })
+          })
+          .then(res => res.json())
+          .then(data => {
+              // Clear local cart after merge
+              localStorage.removeItem('cart');
+              cart = [];
+              
+              successDiv.textContent = 'Sign in successful! Redirecting...';
+              successDiv.style.display = 'block';
+              handleSignInRedirect();
+          })
+          .catch(err => {
+              console.error('Merge error:', err);
+              // Proceed anyway
+              successDiv.textContent = 'Sign in successful! Redirecting...';
+              successDiv.style.display = 'block';
+              handleSignInRedirect();
+          });
+      } else {
+          successDiv.textContent = 'Sign in successful! Redirecting...';
+          successDiv.style.display = 'block';
+          handleSignInRedirect();
+      }
     } else {
       errorDiv.textContent = data.message || 'Invalid email or password';
       errorDiv.style.display = 'block';
@@ -1555,6 +1762,8 @@ function handleCheckout(event) {
           cart = [];
           saveCart();
           updateCartCount();
+          
+          // Cart clearing is handled by api/order/create.php
           
           // Save order details for confirmation page
           const confirmationData = {

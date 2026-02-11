@@ -448,9 +448,29 @@
       // Frontend-only: Check product type and handle COD option
       // Backend PHP logic will replace this condition
       document.addEventListener('DOMContentLoaded', function() {
-        // Check cart items for product_type
-        // If any item in cart is digital, disable COD
-        const cart = JSON.parse(localStorage.getItem('cart')) || [];
+        // Wait for script.js to initialize cart (API or LocalStorage)
+        // We can check this by polling or hooking into an event. 
+        // For simplicity, let's rely on the fact that script.js runs first and fires fetchCartFromAPI.
+        // However, fetchCartFromAPI is async. So we should re-run this check after cart update.
+        // A simple way is to wrap this logic in a function and call it from script.js 
+        // OR just start an interval to check for cart readiness.
+        
+        // BETTER APPROACH: script.js now exposes `cart` globally and updates it.
+        // We can just rely on `loadCheckoutPage` in script.js to handle the UI rendering.
+        // But this specific logic toggles UI elements based on product type.
+        // We should move this logic into `loadCheckoutPage` in script.js entirely.
+        
+        // For now, let's just make sure we are not overwriting with stale localStorage data.
+        // We will remove the direct localStorage read here and let script.js handle the flow.
+        
+        // Actually, let's just use the global `cart` variable. 
+        // Note: `cart` might be empty initially until API returns. 
+        // This specific script runs on DOMContentLoaded. script.js ALSO runs on DOMContentLoaded.
+        // Race condition is likely.
+        
+        // Solution: Do nothing here. Move this logic to `loadCheckoutPage` in script.js
+        // So I will comment out the localStorage read and let the function in script.js handle it.
+      });
         const hasDigitalProduct = cart.some(item => item.product_type === 'digital');
         
         // Also check localStorage product_type (for single product checkout)
