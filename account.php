@@ -381,7 +381,13 @@
 
     function loadUserProfile() {
       fetch('api/user/profile.php')
-      .then(response => response.json())
+      .then(response => {
+          if (response.status === 401) {
+              handleSessionExpiry();
+              throw new Error('Unauthorized');
+          }
+          return response.json();
+      })
       .then(data => {
           if (data.status === 'success') {
               const user = data.data;
@@ -397,7 +403,6 @@
               document.getElementById('email').value = user.email || '';
               document.getElementById('phone').value = user.phone || '';
           } else {
-             // If unauthorized or error, we might be logged out or just strictly local dev
              console.log('Could not load profile from server:', data.message);
           }
       })
@@ -405,26 +410,39 @@
     }
 
     function loadAddresses() {
-      const addresses = JSON.parse(localStorage.getItem('savedAddresses')) || [];
       const addressesList = document.getElementById('addresses-list');
 
-      if (addresses.length === 0) {
-        addressesList.innerHTML = '<p class="empty-message">No saved addresses. Add one to get started.</p>';
-        return;
-      }
-
-      addressesList.innerHTML = addresses.map((addr, index) => `
-          <div class="address-card">
-            <div class="address-header">
-              <h4>${addr.firstName} ${addr.lastName}</h4>
-              <button class="btn-ghost small" onclick="deleteAddress(${index})">Delete</button>
-            </div>
-            <p>${addr.address}</p>
-            <p>${addr.city}, ${addr.state} ${addr.zip}</p>
-            <p>${addr.country}</p>
-            <p>Phone: ${addr.phone}</p>
-          </div>
-        `).join('');
+      fetch('api/address/get.php')
+      .then(res => {
+          if (res.status === 401) {
+              // Optionally handle auth error
+              return { status: 'error', data: [] };
+          }
+          return res.json();
+      })
+      .then(data => {
+          if (data.status === 'success' && data.data && data.data.length > 0) {
+              const addresses = data.data;
+              addressesList.innerHTML = addresses.map((addr) => `
+                  <div class="address-card">
+                    <div class="address-header">
+                      <h4>${addr.first_name} ${addr.last_name}</h4>
+                      <button class="btn-ghost small" onclick="deleteAddress(${addr.id})">Delete</button>
+                    </div>
+                    <p>${addr.address_line1}</p>
+                    <p>${addr.city}, ${addr.state} ${addr.zip_code}</p>
+                    <p>${addr.country}</p>
+                    <p>Phone: ${addr.phone}</p>
+                  </div>
+                `).join('');
+          } else {
+             addressesList.innerHTML = '<p class="empty-message">No saved addresses. Add one to get started.</p>';
+          }
+      })
+      .catch(err => {
+          console.error('Error loading addresses', err);
+          addressesList.innerHTML = '<p class="empty-message">Error loading addresses.</p>';
+      });
     }
 
     function loadAccountOrders() {
@@ -432,13 +450,18 @@
       const userSession = JSON.parse(localStorage.getItem('userSession'));
       if (!userSession || !userSession.id) {
          // Not logged in or mock user
-         // For now do nothing or show empty
          document.getElementById('account-orders-list').innerHTML = '<p class="empty-message">Please log in to view orders.</p>';
          return;
       }
 
       fetch('api/order/get.php')
-      .then(res => res.json())
+      .then(res => {
+          if (res.status === 401) {
+              handleSessionExpiry();
+              throw new Error('Unauthorized');
+          }
+          return res.json();
+      })
       .then(data => {
           const ordersList = document.getElementById('account-orders-list');
           if (data.status === 'success' && data.data.length > 0) {
@@ -458,9 +481,23 @@
       })
       .catch(err => {
           console.error('Failed to load orders', err);
-          document.getElementById('account-orders-list').innerHTML = '<p class="empty-message">Failed to load orders.</p>';
       });
     }
+
+    function handleSessionExpiry() {
+        // Clear local session and redirect
+        localStorage.removeItem('userSession');
+        // Optional: show toast if available, or just alert? Script.js has showToast.
+        if (typeof showToast === 'function') {
+            showToast('Session expired. Please log in again.', 'error');
+        } else {
+            alert('Session expired. Please log in again.');
+        }
+        setTimeout(() => {
+            window.location.href = 'signin.php?redirect=account.php';
+        }, 1500);
+    }
+
 
     function setupTabNavigation() {
       document.querySelectorAll('.account-nav-item').forEach(item => {
@@ -534,21 +571,41 @@
       // New address form
       document.getElementById('new-address-form').addEventListener('submit', function (e) {
         e.preventDefault();
-        const addresses = JSON.parse(localStorage.getItem('savedAddresses')) || [];
-        addresses.push({
+        
+        // Get selected country text (e.g. "India") instead of value ("IN")
+        const countrySelect = this.country;
+        const countryName = countrySelect.options[countrySelect.selectedIndex].text;
+
+        const payload = {
           firstName: this.firstName.value,
           lastName: this.lastName.value,
           address: this.address.value,
           city: this.city.value,
           state: this.state.value,
           zip: this.zip.value,
-          country: this.country.value,
+          country: countryName,
           phone: this.phone.value
+        };
+
+        fetch('api/address/add.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === 'success') {
+                loadAddresses();
+                hideAddAddressForm();
+                showToast('Address saved successfully!', 'success');
+            } else {
+                showToast(data.message || 'Failed to save address', 'error');
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            showToast('Error saving address', 'error');
         });
-        localStorage.setItem('savedAddresses', JSON.stringify(addresses));
-        loadAddresses();
-        hideAddAddressForm();
-        showToast('Address saved successfully!', 'success');
       });
     }
 
@@ -561,13 +618,26 @@
       document.getElementById('new-address-form').reset();
     }
 
-    function deleteAddress(index) {
+    function deleteAddress(id) {
       if (confirm('Are you sure you want to delete this address?')) {
-        const addresses = JSON.parse(localStorage.getItem('savedAddresses')) || [];
-        addresses.splice(index, 1);
-        localStorage.setItem('savedAddresses', JSON.stringify(addresses));
-        loadAddresses();
-        showToast('Address deleted', 'success');
+        fetch('api/address/delete.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: id })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === 'success') {
+                loadAddresses();
+                showToast('Address deleted', 'success');
+            } else {
+                showToast(data.message || 'Failed to delete address', 'error');
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            showToast('Error deleting address', 'error');
+        });
       }
     }
 

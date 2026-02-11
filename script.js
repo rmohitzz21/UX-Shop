@@ -1535,7 +1535,17 @@ function handleCheckout(event) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(orderPayload)
   })
-  .then(response => response.json())
+  .then(response => {
+      if (response.status === 401) {
+          clearUserSession();
+          showToast('Session expired. Please sign in again.', 'error');
+          setTimeout(() => {
+            window.location.href = 'signin.php?redirect=checkout.php';
+          }, 1500);
+          throw new Error('Session expired');
+      }
+      return response.json();
+  })
   .then(data => {
       if (data.status === 'success') {
           // Success
