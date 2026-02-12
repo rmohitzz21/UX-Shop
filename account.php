@@ -1,3 +1,4 @@
+<?php require_once 'includes/config.php'; ?>
 <!DOCTYPE html>
 <html lang="en">
 
@@ -334,7 +335,7 @@
                 <img src="img/i.webp" alt="Instagram" />
               </a>
               <a href="https://www.linkedin.com/company/uxpacific/" target="_blank" rel="noopener">
-                <img src="img/in.webp" alt="LinkedIn" />
+                <img src="img/in1.png" alt="LinkedIn" />
               </a>
               <a href="https://in.pinterest.com/uxpacific/" target="_blank" rel="noopener">
                 <img src="img/p.webp" alt="Pinterest" />

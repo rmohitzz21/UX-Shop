@@ -1,3 +1,9 @@
+<?php
+require_once 'includes/config.php';
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -38,7 +44,7 @@
         right: 0;
         bottom: 0;
         background: url('data:image/svg+xml,<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg"><defs><pattern id="grid" width="100" height="100" patternUnits="userSpaceOnUse"><path d="M 100 0 L 0 0 0 100" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="1"/></pattern></defs><rect width="100%" height="100%" fill="url(%23grid)"/></svg>');
-        /* background: url('img/signin.webp'); */
+        /* background: url('img/signin1.png'); */
         opacity: 0.3;
       }
 
@@ -410,6 +416,7 @@
           </div>
 
           <form class="auth-form-modern" id="signin-form" onsubmit="handleSignIn(event)">
+            <input type="hidden" id="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
             <div id="auth-error" class="error-message-modern" style="display: none;"></div>
             <div id="auth-success" class="success-message-modern" style="display: none;"></div>
 
@@ -610,7 +617,11 @@
            fetch('api/auth/login.php', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email: email, password: password })
+                body: JSON.stringify({ 
+                    email: email, 
+                    password: password,
+                    csrf_token: document.getElementById('csrf_token').value
+                })
             })
             .then(res => res.json())
             .then(data => {
@@ -697,6 +708,20 @@
           }
       }
       window.verifyOtp = verifyOtp;
+
+      document.addEventListener('DOMContentLoaded', function() {
+          const urlParams = new URLSearchParams(window.location.search);
+          const message = urlParams.get('message');
+          if (message) {
+              const errorDiv = document.getElementById('auth-error');
+              // Check if we should show it as success or error based on context? 
+              // Usually "Please sign in first" is an info/warning. The error style is fine.
+              if (errorDiv) {
+                  errorDiv.textContent = message;
+                  errorDiv.style.display = 'block';
+              }
+          }
+      });
     </script>
   </body>
 </html>

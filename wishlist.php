@@ -157,7 +157,7 @@
                   target="_blank"
                   rel="noopener"
                 >
-                  <img src="img/in.webp" alt="LinkedIn" />
+                  <img src="img/in1.png" alt="LinkedIn" />
                 </a>
                 <a
                   href="https://in.pinterest.com/uxpacific/"

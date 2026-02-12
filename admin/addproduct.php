@@ -1,3 +1,14 @@
+<?php
+require_once '../includes/config.php';
+// Ensure admin is logged in
+if (!isset($_SESSION['admin_id'])) {
+    header('Location: admin-login.php');
+    exit;
+}
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 
@@ -323,6 +334,7 @@
     <!-- Form Card -->
     <div class="form-card">
       <form id="add-product-form" onsubmit="handleAddProduct(event)">
+        <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
         <!-- Basic Information -->
         <div class="form-section">
           <h2 class="form-section-title">Basic Information</h2>

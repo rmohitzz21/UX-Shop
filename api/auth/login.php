@@ -15,6 +15,30 @@ if (empty($email) || empty($password)) {
     sendResponse("error", "Email and password are required", null, 400);
 }
 
+// Rate Limiting
+if (!isset($_SESSION['login_attempts'])) {
+    $_SESSION['login_attempts'] = 0;
+    $_SESSION['last_attempt_time'] = time();
+}
+
+if ($_SESSION['login_attempts'] >= 5) {
+    $time_since_last_attempt = time() - $_SESSION['last_attempt_time'];
+    if ($time_since_last_attempt < 600) { // 10 minutes lock
+        sendResponse("error", "Too many failed attempts. Please try again in " . ceil((600 - $time_since_last_attempt) / 60) . " minutes.", null, 429);
+    } else {
+        // Reset after timeout
+        $_SESSION['login_attempts'] = 0;
+        $_SESSION['last_attempt_time'] = time();
+    }
+}
+
+// CSRF Check (Optional for now to support existing clients, but recommended)
+// CSRF Check
+$csrf_token = $input['csrf_token'] ?? $_POST['csrf_token'] ?? '';
+if (!empty($csrf_token) && !hash_equals($_SESSION['csrf_token'] ?? '', $csrf_token)) {
+   sendResponse("error", "Invalid CSRF token", null, 403);
+}
+
 $stmt = $conn->prepare("SELECT id, email, password_hash, first_name, last_name, role, is_blocked FROM users WHERE email = ?");
 $stmt->bind_param("s", $email);
 $stmt->execute();
@@ -50,9 +74,13 @@ if ($user = $result->fetch_assoc()) {
             ]
         ]);
     } else {
+        $_SESSION['login_attempts']++;
+        $_SESSION['last_attempt_time'] = time();
         sendResponse("error", "Invalid credentials", null, 401);
     }
 } else {
+    $_SESSION['login_attempts']++;
+    $_SESSION['last_attempt_time'] = time();
     sendResponse("error", "Invalid credentials", null, 401);
 }
 

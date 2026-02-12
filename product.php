@@ -297,7 +297,8 @@ $related_html = getRelatedProducts($conn, $product);
           </div>
           
           <!-- Hidden Input for Logic -->
-          <input type="hidden" id="selected-size" value="<?php echo $show_sizes ? 'L' : 'One Size'; ?>" />
+          <!-- Hidden Input for Logic -->
+          <input type="hidden" id="product-selected-size" value="<?php echo $show_sizes ? 'L' : 'One Size'; ?>" />
 
           <div class="block">
             <label>Quantity</label>
@@ -312,7 +313,7 @@ $related_html = getRelatedProducts($conn, $product);
         <div class="product-buttons">
           <button class="buy-btn" onclick="addToCartWrapper(<?php echo $product_id; ?>)">Add to Cart</button>
           
-          <button class="buy-btn buy-now-btn" onclick="addToCartWrapper(<?php echo $product_id; ?>); window.location.href='cart.php';">Buy Now</button>
+          <button class="buy-btn buy-now-btn" onclick="handleBuyNowWrapper(<?php echo $product_id; ?>)">Buy Now</button>
         </div>
 
         <!-- TRUST CARDS -->
@@ -383,7 +384,7 @@ $related_html = getRelatedProducts($conn, $product);
              <div class="footer-socials">
               <a href="https://dribbble.com/social-ux-pacific" target="_blank"><img src="img/bl.webp" alt="Dribbble" /></a>
               <a href="https://www.instagram.com/official_uxpacific/" target="_blank"><img src="img/i.webp" alt="Instagram" /></a>
-              <a href="https://www.linkedin.com/company/uxpacific/" target="_blank"><img src="img/in.webp" alt="LinkedIn" /></a>
+              <a href="https://www.linkedin.com/company/uxpacific/" target="_blank"><img src="img/in1.png" alt="LinkedIn" /></a>
               <a href="https://in.pinterest.com/uxpacific/" target="_blank"><img src="img/p.webp" alt="Pinterest" /></a>
               <a href="https://www.behance.net/ux_pacific" target="_blank"><img src="img/be.webp" alt="Behance" /></a>
             </div>
@@ -432,11 +433,17 @@ $related_html = getRelatedProducts($conn, $product);
 
       // Size Selection
       window.selectSize = function(btn, size) {
+          console.log('Selecting size:', size);
           const buttons = document.querySelectorAll('#size-selector button');
           buttons.forEach(b => b.classList.remove('active'));
           btn.classList.add('active');
-          const sizeInput = document.getElementById('selected-size');
-          if(sizeInput) sizeInput.value = size;
+          const sizeInput = document.getElementById('product-selected-size');
+          if(sizeInput) {
+              sizeInput.value = size;
+              console.log('Size updated to:', sizeInput.value);
+          } else {
+              console.error('Size input not found! ID: product-selected-size');
+          }
       }
 
       // Quantity Logic
@@ -485,23 +492,26 @@ $related_html = getRelatedProducts($conn, $product);
 
       // Get selected options for Cart
       window.getSelectedSize = function() {
-          const format = document.getElementById('product-format-select').value;
+          const typeInput = document.getElementById('product-format-select');
+          const type = typeInput ? typeInput.value : 'physical';
           
-          if (format === 'digital') {
+          if (type === 'digital') {
               // Return License
               const licenseInput = document.getElementById('license-type');
               return licenseInput ? licenseInput.value : 'Personal License';
           } else {
               // Return Size or One Size
-              const sizeInput = document.getElementById('selected-size');
-              return sizeInput ? sizeInput.value : 'One Size';
+              const sizeInput = document.getElementById('product-selected-size');
+              const val = sizeInput ? sizeInput.value : 'One Size';
+              console.log('getSelectedSize returning:', val);
+              return val;
           }
       }
 
       window.addToCartWrapper = function(id) {
          // Determine current price being displayed
          const format = document.getElementById('product-format-select').value;
-         const license = document.getElementById('license-type').value;
+         const license = document.getElementById('license-type') ? document.getElementById('license-type').value : null;
          
          let finalPrice = basePrice;
          if (format === 'digital' && license === 'Commercial') {
@@ -519,6 +529,51 @@ $related_html = getRelatedProducts($conn, $product);
              }, 
              format
          );
+      }
+
+      window.handleBuyNowWrapper = async function(id) {
+         // Determine current price being displayed
+         const format = document.getElementById('product-format-select').value;
+         const license = document.getElementById('license-type') ? document.getElementById('license-type').value : null;
+         
+         let finalPrice = basePrice;
+         if (format === 'digital' && license === 'Commercial') {
+             finalPrice = commercialPrice;
+         }
+
+         // Auth Check
+         const userSession = localStorage.getItem('userSession');
+         let isLoggedIn = false;
+         if (userSession) {
+             try {
+                const session = JSON.parse(userSession);
+                if (session && session.id) isLoggedIn = true;
+             } catch(e) {}
+         }
+
+         if (!isLoggedIn) {
+             // Not logged in -> Redirect to Signin with message
+             window.location.href = 'signin.php?redirect=checkout.php&message=Please sign in first';
+             return;
+         }
+         
+         // Logged in -> Add to Cart then Checkout
+         try {
+             await addToCart(
+                 id, 
+                 getSelectedSize(), 
+                 parseInt(document.getElementById('count').textContent), 
+                 {
+                     name: '<?php echo addslashes($name); ?>', 
+                     price: finalPrice, 
+                     image: '<?php echo addslashes($images[0]); ?>'
+                 }, 
+                 format
+             );
+             window.location.href = 'checkout.php';
+         } catch(e) {
+             console.error("Buy Now failed", e);
+         }
       }
       
       // Handle Sign Out (simple version)

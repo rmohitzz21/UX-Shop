@@ -1123,7 +1123,7 @@ img {
 .site-footer {
   margin-top: auto;
   color: #ffffff;
-  background: linear-gradient(120deg, #1a1248, #5629c5);
+  background: linear-gradient(120deg, #59168b, #1c398e, #59168b);
   display: flex;
   flex-direction: column;
   align-items: center;

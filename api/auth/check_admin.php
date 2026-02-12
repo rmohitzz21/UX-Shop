@@ -2,7 +2,7 @@
 require_once '../../includes/config.php';
 
 $email = 'admin@uxpacific.com';
-$password = 'admin123';
+$password = 'password123';
 
 echo "Checking for user: $email\n";
 

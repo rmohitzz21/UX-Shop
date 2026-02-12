@@ -1,7 +1,7 @@
 <?php
 require_once 'includes/config.php';
 
-$email = 'admin@uxpacific.com';
+$email = 'Hello@uxpacific.com';
 $password = 'admin123';
 $hash = password_hash($password, PASSWORD_DEFAULT);
 

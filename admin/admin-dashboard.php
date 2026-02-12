@@ -7,6 +7,11 @@ if (!isset($_SESSION['admin_id'])) {
     header('Location: admin-login.php');
     exit;
 }
+
+// Generate CSRF Token if not set
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">

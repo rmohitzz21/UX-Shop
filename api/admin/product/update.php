@@ -13,9 +13,20 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 // Authentication Check
-if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
+// Authentication Check
+if (
+    (!isset($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'admin') 
+    && !isset($_SESSION['admin_id'])
+) {
     http_response_code(403);
     echo json_encode(["status" => "error", "message" => "Unauthorized access"]);
+    exit;
+}
+
+// CSRF Protection
+if (empty($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'] ?? '', $_POST['csrf_token'])) {
+    http_response_code(403);
+    echo json_encode(["status" => "error", "message" => "Invalid CSRF token"]);
     exit;
 }
 
@@ -41,6 +52,7 @@ $whats_included = $_POST['whats_included'] ?? '';
 $file_specification = $_POST['file_specification'] ?? '';
 $available_type = $_POST['available_type'] ?? 'physical';
 $commercial_price = !empty($_POST['commercial_price']) ? $_POST['commercial_price'] : NULL;
+$is_featured = isset($_POST['featured']) ? 1 : 0;
 $updated_at = date('Y-m-d H:i:s');
 
 // Handle Images

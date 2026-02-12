@@ -1,0 +1,88 @@
+2026-02-11 13:52:20 - Received data: Array
+(
+    [product_id] => 17
+    [quantity] => 1
+    [size] => XL
+    [product_type] => physical
+)
+
+2026-02-11 13:52:40 - Received data: Array
+(
+    [product_id] => 17
+    [quantity] => 2
+    [size] => S
+    [product_type] => physical
+)
+
+2026-02-12 07:47:20 - Received data: Array
+(
+    [product_id] => 18
+    [quantity] => 1
+    [size] => One Size
+    [product_type] => physical
+)
+
+2026-02-12 08:10:12 - Received data: Array
+(
+    [product_id] => 23
+    [quantity] => 1
+    [size] => One Size
+    [product_type] => physical
+)
+
+2026-02-12 08:21:11 - Received data: Array
+(
+    [product_id] => 22
+    [quantity] => 1
+    [size] => One Size
+    [product_type] => physical
+)
+
+2026-02-12 08:21:27 - Received data: Array
+(
+    [product_id] => 22
+    [quantity] => 2
+    [size] => One Size
+    [product_type] => physical
+)
+
+2026-02-12 08:21:57 - Received data: Array
+(
+    [product_id] => 23
+    [quantity] => 1
+    [size] => One Size
+    [product_type] => physical
+)
+
+2026-02-12 08:22:25 - Received data: Array
+(
+    [product_id] => 21
+    [quantity] => 1
+    [size] => Personal
+    [product_type] => digital
+)
+
+2026-02-12 09:18:47 - Received data: Array
+(
+    [product_id] => 22
+    [quantity] => 1
+    [size] => Personal
+    [product_type] => digital
+)
+
+2026-02-12 10:55:06 - Received data: Array
+(
+    [product_id] => 22
+    [quantity] => 1
+    [size] => One Size
+    [product_type] => physical
+)
+
+2026-02-12 10:55:23 - Received data: Array
+(
+    [product_id] => 21
+    [quantity] => 2
+    [size] => Personal
+    [product_type] => digital
+)
+

@@ -10,8 +10,14 @@ if (!isset($_SESSION['user_id'])) {
 
 $user_id = $_SESSION['user_id'];
 
-// Get ONLY necessary fields for profile form
-$stmt = $conn->prepare("SELECT first_name, last_name, email, phone FROM users WHERE id = ?");
+// Get user profile and primary address
+$sql = "SELECT u.first_name, u.last_name, u.email, u.phone, 
+               a.address_line1, a.address_line2, a.city, a.state, a.zip_code, a.country 
+        FROM users u 
+        LEFT JOIN addresses a ON u.id = a.user_id 
+        WHERE u.id = ?";
+
+$stmt = $conn->prepare($sql);
 $stmt->bind_param("i", $user_id);
 
 if ($stmt->execute()) {

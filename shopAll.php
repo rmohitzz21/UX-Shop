@@ -146,9 +146,24 @@
           <!-- PRODUCT GRID (reuses existing .product-grid / .product-card styles) -->
           <div class="product-grid shop-all-grid">
             <?php
-            // Fetch all active products
-            $sql = "SELECT * FROM products WHERE is_active = 1 ORDER BY created_at DESC";
-            $result = $conn->query($sql);
+            // Pagination Settings
+            $limit = 12; // Items per page
+            $page = isset($_GET['page']) && is_numeric($_GET['page']) ? (int)$_GET['page'] : 1;
+            if ($page < 1) $page = 1;
+            $offset = ($page - 1) * $limit;
+
+            // Count total active products for pagination UI
+            $countSql = "SELECT COUNT(*) as total FROM products WHERE is_active = 1";
+            $countResult = $conn->query($countSql);
+            $totalProducts = $countResult->fetch_assoc()['total'];
+            $totalPages = ceil($totalProducts / $limit);
+
+            // Fetch products with LIMIT and OFFSET
+            $sql = "SELECT * FROM products WHERE is_active = 1 ORDER BY created_at DESC LIMIT ? OFFSET ?";
+            $stmt = $conn->prepare($sql);
+            $stmt->bind_param("ii", $limit, $offset);
+            $stmt->execute();
+            $result = $stmt->get_result();
 
             if ($result && $result->num_rows > 0) {
                 while($row = $result->fetch_assoc()) {
@@ -202,6 +217,26 @@
             }
             ?>
           </div>
+          </div>
+          
+          <!-- Pagination Controls -->
+          <?php if ($totalPages > 1): ?>
+          <div class="pagination" style="display: flex; justify-content: center; gap: 1rem; margin-top: 2rem;">
+              <?php if ($page > 1): ?>
+                  <a href="?page=<?= $page - 1 ?>" class="btn-ghost small">Previous</a>
+              <?php else: ?>
+                  <button class="btn-ghost small" disabled style="opacity: 0.5; cursor: not-allowed;">Previous</button>
+              <?php endif; ?>
+
+              <span style="display: flex; align-items: center; font-weight: 500;">Page <?= $page ?> of <?= $totalPages ?></span>
+
+              <?php if ($page < $totalPages): ?>
+                  <a href="?page=<?= $page + 1 ?>" class="btn-ghost small">Next</a>
+              <?php else: ?>
+                  <button class="btn-ghost small" disabled style="opacity: 0.5; cursor: not-allowed;">Next</button>
+              <?php endif; ?>
+          </div>
+          <?php endif; ?>
         </section>
 
         <!-- CTA SECTION (same style as index) -->
@@ -259,7 +294,7 @@
                   target="_blank"
                   rel="noopener"
                 >
-                  <img src="img/in.webp" alt="LinkedIn" />
+                  <img src="img/in1.png" alt="LinkedIn" />
                 </a>
 
                 <a

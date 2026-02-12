@@ -10,6 +10,7 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 $data = json_decode(file_get_contents('php://input'), true);
+file_put_contents('cart_log.txt', date('Y-m-d H:i:s') . " - Received data: " . print_r($data, true) . "\n", FILE_APPEND);
 
 if (!isset($data['product_id']) || !isset($data['quantity'])) {
     http_response_code(400);

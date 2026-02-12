@@ -579,80 +579,86 @@ const products = {
 // Add to cart
 // Add to cart
 function addToCart(productId, size = null, quantity = 1, explicitDetails = null, productFormat = null) {
-  // If explicitDetails are provided (e.g. from shop page), use them for immediate feedback.
-  // Otherwise, default to placeholders. The cart page will fetch fresh data from API using ID.
+  return new Promise((resolve, reject) => {
+    // If explicitDetails are provided (e.g. from shop page), use them for immediate feedback.
+    // Otherwise, default to placeholders. The cart page will fetch fresh data from API using ID.
+    
+    let product = {
+       id: productId,
+       name: (explicitDetails && explicitDetails.name) ? explicitDetails.name : 'Product',
+       price: (explicitDetails && explicitDetails.price) ? explicitDetails.price : 0,
+       image: (explicitDetails && explicitDetails.image) ? explicitDetails.image : 'img/sticker.webp',
+       description: (explicitDetails && explicitDetails.description) ? explicitDetails.description : ''
+    };
   
-  let product = {
-     id: productId,
-     name: (explicitDetails && explicitDetails.name) ? explicitDetails.name : 'Product',
-     price: (explicitDetails && explicitDetails.price) ? explicitDetails.price : 0,
-     image: (explicitDetails && explicitDetails.image) ? explicitDetails.image : 'img/sticker.webp',
-     description: (explicitDetails && explicitDetails.description) ? explicitDetails.description : ''
-  };
-
-  // Get product_type priority: Argument > localStorage > default
-  const product_type = productFormat || localStorage.getItem('product_type') || 'physical';
+    // Get product_type priority: Argument > localStorage > default
+    const product_type = productFormat || localStorage.getItem('product_type') || 'physical';
+    
+    const userSession = getUserSession();
   
-  const userSession = getUserSession();
-
-  if (userSession && userSession.id) {
-      // LOGGED IN: Use API
-      const payload = {
-          product_id: productId,
-          quantity: quantity,
-          size: size,
-          product_type: product_type
-      };
-
-      fetch('api/cart/add.php', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-      })
-      .then(res => res.json())
-      .then(data => {
-          if (data.status === 'success') {
-              showToast('Item added to cart!', 'success');
-              fetchCartFromAPI(); // Refresh cart
-          } else {
-              showToast(data.message || 'Failed to add item', 'error');
-          }
-      })
-      .catch(err => {
-          console.error(err);
-          showToast('Error adding item', 'error');
-      });
-
-  } else {
-      // GUEST: Use LocalStorage
-      const existingIndex = cart.findIndex(
-        item => item.id === productId && item.size === size && item.product_type === product_type
-      );
-      
-      if (existingIndex > -1) {
-        cart[existingIndex].quantity += quantity;
-      } else {
-        cart.push({
-          id: productId,
-          name: product.name,
-          price: product.price,
-          image: product.image,
-          size: size,
-          quantity: quantity,
-          product_type: product_type,
-          description: product.description
+    if (userSession && userSession.id) {
+        // LOGGED IN: Use API
+        const payload = {
+            product_id: productId,
+            quantity: quantity,
+            size: size,
+            product_type: product_type
+        };
+  
+        fetch('api/cart/add.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === 'success') {
+                showToast('Item added to cart!', 'success');
+                fetchCartFromAPI(); // Refresh cart
+                resolve(data);
+            } else {
+                showToast(data.message || 'Failed to add item', 'error');
+                reject(data.message);
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            showToast('Error adding item', 'error');
+            reject(err);
         });
-      }
-      
-      saveCart();
-      updateCartCount();
-      showToast('Item added to cart!', 'success');
-      
-      // If on cart page, refresh it
-      if (window.location.pathname.includes('cart.php')) {
-        loadCartPage();
-      }
-  }
+  
+    } else {
+        // GUEST: Use LocalStorage
+        const existingIndex = cart.findIndex(
+          item => item.id === productId && item.size === size && item.product_type === product_type
+        );
+        
+        if (existingIndex > -1) {
+          cart[existingIndex].quantity += quantity;
+        } else {
+          cart.push({
+            id: productId,
+            name: product.name,
+            price: product.price,
+            image: product.image,
+            size: size,
+            quantity: quantity,
+            product_type: product_type,
+            description: product.description
+          });
+        }
+        
+        saveCart();
+        updateCartCount();
+        showToast('Item added to cart!', 'success');
+        
+        // If on cart page, refresh it
+        if (window.location.pathname.includes('cart.php')) {
+          loadCartPage();
+        }
+        resolve({ status: 'success' });
+    }
+  });
 }
 
 // Remove from cart

@@ -14,9 +14,20 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 // Authentication Check
-if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
+// Authentication Check
+if (
+    (!isset($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'admin') 
+    && !isset($_SESSION['admin_id'])
+) {
     http_response_code(403);
     echo json_encode(["status" => "error", "message" => "Unauthorized access"]);
+    exit;
+}
+
+// CSRF Protection
+if (empty($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'] ?? '', $_POST['csrf_token'])) {
+    http_response_code(403);
+    echo json_encode(["status" => "error", "message" => "Invalid CSRF token"]);
     exit;
 }
 
@@ -33,6 +44,7 @@ $whats_included = $_POST['whats_included'] ?? '';
 $file_specification = $_POST['file_specification'] ?? '';
 $available_type = $_POST['available_type'] ?? 'physical'; // physical, digital, both
 $commercial_price = !empty($_POST['commercial_price']) ? $_POST['commercial_price'] : NULL;
+$is_featured = isset($_POST['featured']) ? 1 : 0;
 $created_at = date('Y-m-d H:i:s');
 $updated_at = date('Y-m-d H:i:s');      
 
@@ -110,7 +122,7 @@ if (isset($_FILES['images']) && !empty($_FILES['images']['name'][0])) {
 $additional_images = json_encode($uploadedImages);
 
 // Insert into DB
-$sql = "INSERT INTO products (name, description, category, available_type, price, commercial_price, old_price, image, stock, rating, related_products, whats_included, file_specification, additional_images, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+$sql = "INSERT INTO products (name, description, category, available_type, price, commercial_price, old_price, image, stock, rating, related_products, whats_included, file_specification, additional_images, is_featured, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 $stmt = $conn->prepare($sql);
 
 if ($stmt) {
@@ -140,7 +152,9 @@ if ($stmt) {
     
     // Total: ssssdddsidssssss -> 16 chars.
     
-    $stmt->bind_param("ssssdddsidssssss", $name, $description, $category, $available_type, $price, $commercial_price, $old_price, $imagePath, $stock, $rating, $related_products, $whats_included, $file_specification, $additional_images, $created_at, $updated_at);
+    // Total: ssssdddsidssssisi -> 17 chars.
+    
+    $stmt->bind_param("ssssdddsidssssiss", $name, $description, $category, $available_type, $price, $commercial_price, $old_price, $imagePath, $stock, $rating, $related_products, $whats_included, $file_specification, $additional_images, $is_featured, $created_at, $updated_at);
     
     if ($stmt->execute()) {
         $product_id = $conn->insert_id;
