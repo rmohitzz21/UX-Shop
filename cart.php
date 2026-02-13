@@ -115,12 +115,13 @@
               <div class="cart-items-wrapper">
                 <div id="cart-items" class="cart-items">
                   <!-- Cart items will be loaded here -->
-                  <div class="cart-empty" id="cart-empty">
+                </div>
+                
+                <div class="cart-empty" id="cart-empty" style="display: none;">
                     <img src="img/cart-icon.webp" alt="Empty Cart" />
                     <h2>Your cart is empty</h2>
                     <p>Looks like you haven't added anything to your cart yet.</p>
                     <a href="shopAll.php" class="btn-primary" style="width: auto;">Continue Shopping</a>
-                  </div>
                 </div>
               </div>
 

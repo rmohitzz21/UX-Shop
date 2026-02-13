@@ -808,23 +808,23 @@ async function loadCartPage() {
   if (!cartItemsContainer) return;
 
   // Handle empty cart
+  // Handle empty cart
+  const cartSummary = document.querySelector('.cart-summary-wrapper');
+  
   if (cart.length === 0) {
-    cartEmpty.style.display = 'block';
-    if (checkoutBtn) checkoutBtn.style.display = 'none';
     
-    if(document.getElementById('cart-subtotal')) {
-        document.getElementById('cart-subtotal').textContent = '$0';
-        document.getElementById('cart-shipping').textContent = 'Free';
-        document.getElementById('cart-tax').textContent = '$0';
-        document.getElementById('cart-total').textContent = '$0';
-    }
+    if (cartEmpty) cartEmpty.style.display = 'block';
     
-    // Clear content to show empty state
+    // Hide summary panel when empty for better interface
+    if (cartSummary) cartSummary.style.display = 'none';
+    
+    // Clear any previous items
     cartItemsContainer.innerHTML = '';
     return;
   }
   
-  cartEmpty.style.display = 'none';
+  if (cartEmpty) cartEmpty.style.display = 'none';
+  if (cartSummary) cartSummary.style.display = 'block';
 
   // Helper function to render cart HTML using current cart + data source
   const renderCartHTML = (detailsSource) => {
@@ -868,7 +868,8 @@ async function loadCartPage() {
       cartItemsContainer.innerHTML = html;
       
       // Update totals
-      const shipping = subtotal > 0 ? 50 : 0;
+      const hasPhysicalItems = cart.some(item => (item.product_type === 'physical' || !item.product_type));
+      const shipping = (subtotal > 0 && hasPhysicalItems) ? 50 : 0;
       const tax = Math.round(subtotal * 0.18);
       const total = subtotal + shipping + tax;
       
@@ -1706,7 +1707,8 @@ function handleCheckout(event) {
   
   // Calculate totals
   const subtotal = getCartTotal();
-  const shippingCost = 50;
+  const hasPhysicalItems = cart.some(item => (item.product_type === 'physical' || !item.product_type));
+  const shippingCost = (subtotal > 0 && hasPhysicalItems) ? 50 : 0;
   const tax = Math.round(subtotal * 0.18);
   const total = subtotal + shippingCost + tax;
   

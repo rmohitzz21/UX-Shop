@@ -86,3 +86,115 @@
     [product_type] => digital
 )
 
+2026-02-12 12:48:00 - Received data: Array
+(
+    [product_id] => 20
+    [quantity] => 2
+    [size] => One Size
+    [product_type] => physical
+)
+
+2026-02-12 13:17:29 - Received data: Array
+(
+    [product_id] => 21
+    [quantity] => 1
+    [size] => Personal
+    [product_type] => digital
+)
+
+2026-02-12 13:20:45 - Received data: Array
+(
+    [product_id] => 17
+    [quantity] => 1
+    [size] => L
+    [product_type] => physical
+)
+
+2026-02-12 13:21:06 - Received data: Array
+(
+    [product_id] => 17
+    [quantity] => 1
+    [size] => L
+    [product_type] => physical
+)
+
+2026-02-12 17:15:41 - Received data: Array
+(
+    [product_id] => 17
+    [quantity] => 1
+    [size] => XL
+    [product_type] => physical
+)
+
+2026-02-13 07:27:57 - Received data: Array
+(
+    [product_id] => 18
+    [quantity] => 1
+    [size] => One Size
+    [product_type] => physical
+)
+
+2026-02-13 07:28:32 - Received data: Array
+(
+    [product_id] => 21
+    [quantity] => 2
+    [size] => Personal
+    [product_type] => digital
+)
+
+2026-02-13 07:48:59 - Received data: Array
+(
+    [product_id] => 21
+    [quantity] => 2
+    [size] => Personal
+    [product_type] => digital
+)
+
+2026-02-13 07:56:17 - Received data: Array
+(
+    [product_id] => 21
+    [quantity] => 1
+    [size] => Personal
+    [product_type] => digital
+)
+
+2026-02-13 07:56:38 - Received data: Array
+(
+    [product_id] => 17
+    [quantity] => 1
+    [size] => L
+    [product_type] => physical
+)
+
+2026-02-13 07:57:14 - Received data: Array
+(
+    [product_id] => 20
+    [quantity] => 1
+    [size] => One Size
+    [product_type] => physical
+)
+
+2026-02-13 07:57:42 - Received data: Array
+(
+    [product_id] => 21
+    [quantity] => 1
+    [size] => Personal
+    [product_type] => digital
+)
+
+2026-02-13 09:45:52 - Received data: Array
+(
+    [product_id] => 21
+    [quantity] => 1
+    [size] => Personal
+    [product_type] => digital
+)
+
+2026-02-13 09:47:56 - Received data: Array
+(
+    [product_id] => 21
+    [quantity] => 1
+    [size] => Personal
+    [product_type] => digital
+)
+
