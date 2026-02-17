@@ -49,14 +49,9 @@ $stmt = $conn->prepare("INSERT INTO users (email, password_hash, first_name, las
 $stmt->bind_param("sssss", $email, $passwordHash, $firstName, $lastName, $phone);
 
 if ($stmt->execute()) {
-    $userId = $stmt->insert_id;
-    
-    // Generate a simple token (in production use JWT)
-    $token = bin2hex(random_bytes(32));
-    
-    echo json_encode(['status' => 'success', 'message' => 'User registered successfully', 'user' => ['id' => $userId, 'email' => $email, 'firstName' => $firstName, 'lastName' => $lastName, 'role' => 'customer'], 'tokens' => ['access_token' => $token, 'refresh_token' => $token]]);
+    echo json_encode(['status' => 'success', 'message' => 'Account created successfully! Please sign in.']);
 } else {
-    echo json_encode(['status' => 'error', 'message' => 'Registration failed: ' . $conn->error]);
+    echo json_encode(['status' => 'error', 'message' => 'Registration failed. Please try again.']);
 }
 
 $stmt->close();

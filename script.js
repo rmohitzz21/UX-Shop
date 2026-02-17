@@ -2087,32 +2087,12 @@ function handleSignUp(event) {
   .then(response => response.json())
   .then(data => {
     if (data.status === 'success') {
-      const user = data.user;
-      const tokens = data.tokens;
-      
-      const userData = {
-        id: user.id,
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        name: `${user.firstName} ${user.lastName}`.trim(),
-        phone: phone || '',
-        loginTime: new Date().toISOString()
-      };
-      
-      // Store Session
-      setUserSession(userData);
-      
-      // Store Tokens
-      localStorage.setItem('accessToken', tokens.access_token);
-      localStorage.setItem('refreshToken', tokens.refresh_token);
-      
       if (successDiv) {
-        successDiv.textContent = 'Account created successfully! Redirecting...';
+        successDiv.textContent = 'Account created successfully! Redirecting to sign in...';
         successDiv.style.display = 'block';
       }
       setTimeout(() => {
-        window.location.href = 'index.php';
+        window.location.href = 'signin.php?message=' + encodeURIComponent('Registration successful! Please sign in.');
       }, 1500);
     } else {
       if (errorDiv) {

@@ -713,12 +713,19 @@ if (empty($_SESSION['csrf_token'])) {
           const urlParams = new URLSearchParams(window.location.search);
           const message = urlParams.get('message');
           if (message) {
-              const errorDiv = document.getElementById('auth-error');
-              // Check if we should show it as success or error based on context? 
-              // Usually "Please sign in first" is an info/warning. The error style is fine.
-              if (errorDiv) {
-                  errorDiv.textContent = message;
-                  errorDiv.style.display = 'block';
+              // Show as success if it's a registration message, otherwise as error/info
+              if (message.toLowerCase().includes('successful') || message.toLowerCase().includes('success')) {
+                  const successDiv = document.getElementById('auth-success');
+                  if (successDiv) {
+                      successDiv.textContent = message;
+                      successDiv.style.display = 'block';
+                  }
+              } else {
+                  const errorDiv = document.getElementById('auth-error');
+                  if (errorDiv) {
+                      errorDiv.textContent = message;
+                      errorDiv.style.display = 'block';
+                  }
               }
           }
       });

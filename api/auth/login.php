@@ -50,8 +50,12 @@ if ($user = $result->fetch_assoc()) {
     }
 
     if (password_verify($password, $user['password_hash'])) {
-        // Start session
-        
+        // Regenerate session ID to prevent session fixation
+        session_regenerate_id(true);
+
+        // Reset login attempts on success
+        $_SESSION['login_attempts'] = 0;
+
         $_SESSION['user_id'] = $user['id'];
         $_SESSION['email'] = $user['email'];
         $_SESSION['role'] = $user['role'];
