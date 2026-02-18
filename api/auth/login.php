@@ -32,11 +32,10 @@ if ($_SESSION['login_attempts'] >= 5) {
     }
 }
 
-// CSRF Check (Optional for now to support existing clients, but recommended)
-// CSRF Check
+// CSRF Check - enforce token validation
 $csrf_token = $input['csrf_token'] ?? $_POST['csrf_token'] ?? '';
-if (!empty($csrf_token) && !hash_equals($_SESSION['csrf_token'] ?? '', $csrf_token)) {
-   sendResponse("error", "Invalid CSRF token", null, 403);
+if (empty($csrf_token) || !isset($_SESSION['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $csrf_token)) {
+   sendResponse("error", "Invalid or missing CSRF token", null, 403);
 }
 
 $stmt = $conn->prepare("SELECT id, email, password_hash, first_name, last_name, role, is_blocked FROM users WHERE email = ?");
@@ -61,19 +60,28 @@ if ($user = $result->fetch_assoc()) {
         $_SESSION['role'] = $user['role'];
         $_SESSION['username'] = $user['first_name'] . ' ' . $user['last_name'];
         
-        // Generate token for mobile/client app compatibility
+        // Generate token for client-side session tracking
         $token = bin2hex(random_bytes(32));
-        
+
+        // Store refresh token in DB
+        $expires_at = date('Y-m-d H:i:s', time() + 86400 * 7); // 7 days
+        $tokenStmt = $conn->prepare("INSERT INTO user_tokens (user_id, refresh_token, expires_at) VALUES (?, ?, ?)");
+        if ($tokenStmt) {
+            $tokenStmt->bind_param("iss", $user['id'], $token, $expires_at);
+            $tokenStmt->execute();
+            $tokenStmt->close();
+        }
+
         sendResponse("success", "Login successful", [
             'user' => [
-                'id' => $user['id'], 
-                'email' => $user['email'], 
-                'firstName' => $user['first_name'], 
-                'lastName' => $user['last_name'], 
+                'id' => $user['id'],
+                'email' => $user['email'],
+                'firstName' => $user['first_name'],
+                'lastName' => $user['last_name'],
                 'role' => $user['role']
             ],
             'tokens' => [
-                'access_token' => $token, 
+                'access_token' => $token,
                 'refresh_token' => $token
             ]
         ]);

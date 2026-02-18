@@ -29,6 +29,24 @@ if (empty($email) || empty($password)) {
     exit;
 }
 
+// Email format validation
+if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+    echo json_encode(['status' => 'error', 'message' => 'Invalid email format']);
+    exit;
+}
+
+// Password strength validation
+if (strlen($password) < 8) {
+    echo json_encode(['status' => 'error', 'message' => 'Password must be at least 8 characters']);
+    exit;
+}
+
+// Name validation
+if (empty($firstName) || strlen(trim($firstName)) < 2) {
+    echo json_encode(['status' => 'error', 'message' => 'First name is required (at least 2 characters)']);
+    exit;
+}
+
 // Check if email exists
 $stmt = $conn->prepare("SELECT id FROM users WHERE email = ?");
 $stmt->bind_param("s", $email);

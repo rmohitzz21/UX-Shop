@@ -48,7 +48,11 @@ if ($stmt->execute()) {
     } else {
         // Could mean order not found OR status was already same value
         // Check if order exists
-        $check = $conn->query("SELECT id FROM orders WHERE order_number = '$orderNumber'");
+        $checkStmt = $conn->prepare("SELECT id FROM orders WHERE order_number = ?");
+        $checkStmt->bind_param("s", $orderNumber);
+        $checkStmt->execute();
+        $check = $checkStmt->get_result();
+        $checkStmt->close();
         if ($check->num_rows == 0) {
            sendResponse("error", "Order not found", null, 404);
         } else {

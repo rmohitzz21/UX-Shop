@@ -1,15 +1,10 @@
 <?php
 header('Content-Type: application/json');
-header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: POST');
 
 require_once '../../../includes/config.php';
 
-if ($conn->connect_error) {
-    http_response_code(500);
-    echo json_encode(["status" => "error", "message" => "Database connection failed"]);
-    exit;
-}
+// Enforce admin access
+requireAdmin();
 
 $data = json_decode(file_get_contents("php://input"), true);
 

@@ -48,10 +48,13 @@ if ($user) {
     }
     
     if (password_verify($password, $user['password_hash'])) {
+        // Regenerate session ID to prevent session fixation
+        session_regenerate_id(true);
+
         // Reset attempts on success
         $_SESSION['admin_login_attempts'] = 0;
         $_SESSION['admin_last_attempt_time'] = time();
-        
+
         $_SESSION['admin_id'] = $user['id'];
         $_SESSION['admin_email'] = $user['email'];
         $_SESSION['role'] = $user['role'];

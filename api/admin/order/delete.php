@@ -37,7 +37,7 @@ try {
     $stmtItems = $conn->prepare("DELETE FROM order_items WHERE order_id = ?");
     $stmtItems->bind_param("i", $order_id);
     if (!$stmtItems->execute()) {
-        throw new Exception("Error deleting order items: " . $stmtItems->error);
+        throw new Exception("Failed to delete order items");
     }
     $stmtItems->close();
 
@@ -45,7 +45,7 @@ try {
     $stmtOrder = $conn->prepare("DELETE FROM orders WHERE id = ?");
     $stmtOrder->bind_param("i", $order_id);
     if (!$stmtOrder->execute()) {
-        throw new Exception("Error deleting order: " . $stmtOrder->error);
+        throw new Exception("Failed to delete order");
     }
     
     if ($stmtOrder->affected_rows === 0) {

@@ -443,17 +443,17 @@
           }
 
           // Fetch latest 8 active products
-          $sql = "SELECT * FROM products WHERE is_active = 1 ORDER BY created_at DESC LIMIT 8";
+          $sql = "SELECT * FROM products WHERE is_active = 1 AND (stock > 0 OR available_type != 'physical') ORDER BY created_at DESC LIMIT 8";
           $result = $conn->query($sql);
 
           if ($result && $result->num_rows > 0) {
               while($row = $result->fetch_assoc()) {
                   $id = $row['id'];
                   $name = htmlspecialchars($row['name']);
-                  $jsName = addslashes($row['name']);
-                  $jsImage = addslashes($row['image']);
-                  $jsCategory = addslashes($row['category']);
-                  $jsAvailableType = addslashes($row['available_type'] ?? 'physical');
+                  $jsName = htmlspecialchars(addslashes($row['name']), ENT_QUOTES, 'UTF-8');
+                  $jsImage = htmlspecialchars(addslashes($row['image']), ENT_QUOTES, 'UTF-8');
+                  $jsCategory = htmlspecialchars(addslashes($row['category']), ENT_QUOTES, 'UTF-8');
+                  $jsAvailableType = htmlspecialchars(addslashes($row['available_type'] ?? 'physical'), ENT_QUOTES, 'UTF-8');
 
                   $price = number_format($row['price'], 2);
                   $old_price = !empty($row['old_price']) ? number_format($row['old_price'], 2) : '';
@@ -468,8 +468,7 @@
                   }
                   
                   // File Spec or "Size" equivalent
-                  // $spec = !empty($row['file_specification']) ? htmlspecialchars($row['file_specification']) : '';
-                  // $specHtml = $spec ? "<p style='font-size: 0.85rem; color: #666; margin-bottom: 0.5rem;'>Spec: $spec</p>" : "";
+                  $specHtml = '';
 
                   echo "
                   <article class='product-card' data-category='$category'>

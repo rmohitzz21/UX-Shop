@@ -1,7 +1,5 @@
 <?php
 header('Content-Type: application/json');
-header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: POST');
 
 require_once '../../../includes/config.php';
 
@@ -184,12 +182,12 @@ if ($stmt) {
         echo json_encode(["status" => "success", "message" => "Product updated successfully"]);
     } else {
         http_response_code(500);
-        echo json_encode(["status" => "error", "message" => "Database error: " . $stmt->error]);
+        echo json_encode(["status" => "error", "message" => "Failed to update product"]);
     }
     $stmt->close();
 } else {
     http_response_code(500);
-    echo json_encode(["status" => "error", "message" => "Prepare failed: " . $conn->error]);
+    echo json_encode(["status" => "error", "message" => "Failed to prepare product update"]);
 }
 
 $conn->close();

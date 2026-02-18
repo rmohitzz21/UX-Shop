@@ -1,7 +1,5 @@
 <?php
 header('Content-Type: application/json');
-header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: POST');
 
 // Include database configuration
 require_once '../../../includes/config.php';
@@ -170,7 +168,7 @@ if ($stmt) {
         http_response_code(500);
         echo json_encode([
             "status" => "error",
-            "message" => "Database error: " . $stmt->error
+            "message" => "Failed to create product"
         ]);
     }
     $stmt->close();
@@ -178,7 +176,7 @@ if ($stmt) {
     http_response_code(500);
     echo json_encode([
         "status" => "error",
-        "message" => "Statement preparation failed: " . $conn->error
+        "message" => "Failed to prepare product creation"
     ]);
 }
 

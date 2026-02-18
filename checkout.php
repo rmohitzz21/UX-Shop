@@ -194,6 +194,7 @@
                           name="address"
                           type="text"
                           placeholder="House/Flat No., Building Name"
+                          
                         />
                       </div>
 
@@ -204,6 +205,7 @@
                             id="city"
                             name="city"
                             type="text"
+                           
                           />
                         </div>
                         <div class="form-field">
@@ -212,6 +214,7 @@
                             id="state"
                             name="state"
                             type="text"
+                           
                           />
                         </div>
                       </div>
@@ -224,6 +227,7 @@
                             name="zip"
                             type="text"
                             pattern="[\d]+"
+                            
                           />
                         </div>
                         <div class="form-field">

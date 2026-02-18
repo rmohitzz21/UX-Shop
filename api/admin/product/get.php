@@ -1,8 +1,10 @@
 <?php
 header('Content-Type: application/json');
-header('Access-Control-Allow-Origin: *');
 
 require_once '../../../includes/config.php';
+
+// Enforce admin access
+requireAdmin();
 
 if (!isset($_GET['id'])) {
     http_response_code(400);

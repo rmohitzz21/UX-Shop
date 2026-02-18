@@ -1,5 +1,6 @@
 <?php
 // api/cart/list.php
+header('Content-Type: application/json');
 require_once '../../includes/config.php';
 
 // Check auth
@@ -9,15 +10,17 @@ if (!isset($_SESSION['user_id'])) {
     exit;
 }
 
-$user_id = $_SESSION['user_id'];
-$sql = "SELECT c.id, c.product_id, c.quantity, c.size, c.available_type,
-        p.name, p.price, p.image, p.description, p.stock
+$user_id = intval($_SESSION['user_id']);
+
+$stmt = $conn->prepare("SELECT c.id, c.product_id, c.quantity, c.size, c.available_type,
+        p.name, p.price, p.image, p.description, p.stock, p.available_type AS product_available_type
         FROM cart c
         JOIN products p ON c.product_id = p.id
-        WHERE c.user_id = '$user_id'
-        ORDER BY c.created_at DESC";
-
-$result = $conn->query($sql);
+        WHERE c.user_id = ?
+        ORDER BY c.created_at DESC");
+$stmt->bind_param("i", $user_id);
+$stmt->execute();
+$result = $stmt->get_result();
 $items = [];
 while ($row = $result->fetch_assoc()) {
     $items[] = [
@@ -34,5 +37,7 @@ while ($row = $result->fetch_assoc()) {
     ];
 }
 
+$stmt->close();
+$conn->close();
 echo json_encode(['status' => 'success', 'data' => $items]);
 ?>

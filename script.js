@@ -504,6 +504,11 @@ document.querySelectorAll(".sizes button").forEach(btn => {
     if (count < 1) {
       count = 1;
     }
+    // Max 10 per product
+    if (count > 10) {
+      count = 10;
+      showToast('Maximum 10 items per product', 'error');
+    }
 
     countEl.textContent = count;
   }
@@ -637,7 +642,12 @@ function addToCart(productId, size = null, quantity = 1, explicitDetails = null,
         
         if (existingIndex > -1) {
           cart[existingIndex].quantity += quantity;
+          if (cart[existingIndex].quantity > 10) {
+            cart[existingIndex].quantity = 10;
+            showToast('Maximum 10 items per product', 'error');
+          }
         } else {
+          if (quantity > 10) quantity = 10;
           cart.push({
             id: productId,
             name: product.name,
@@ -718,9 +728,14 @@ function removeFromCart(productId, size = null) {
 // Update cart item quantity
 function updateCartQuantity(productId, size, newQuantity) {
   const userSession = getUserSession();
-  
+
   if (newQuantity <= 0) {
       removeFromCart(productId, size);
+      return;
+  }
+
+  if (newQuantity > 10) {
+      showToast('Maximum 10 items per product', 'error');
       return;
   }
 
@@ -1525,6 +1540,7 @@ function handleSignIn(event) {
   btnLoader.style.display = 'inline';
   
   // Call API
+  const csrfToken = document.getElementById('csrf_token') ? document.getElementById('csrf_token').value : '';
   fetch('api/auth/login.php', {
     method: 'POST',
     headers: {
@@ -1532,14 +1548,15 @@ function handleSignIn(event) {
     },
     body: JSON.stringify({
       email: email,
-      password: password
+      password: password,
+      csrf_token: csrfToken
     })
   })
   .then(response => response.json())
   .then(data => {
     if (data.status === 'success') {
-      const user = data.user;
-      const tokens = data.tokens;
+      const user = data.data.user;
+      const tokens = data.data.tokens;
       
       const userData = {
         id: user.id,
@@ -2460,7 +2477,9 @@ function checkAuthBeforeCheckout(event) {
 function handleSignInRedirect() {
   const urlParams = new URLSearchParams(window.location.search);
   const redirect = urlParams.get('redirect');
-  if (redirect) {
+  // Only allow relative redirects to prevent open redirect attacks
+  const allowedPages = ['index.php', 'cart.php', 'checkout.php', 'account.php', 'orders.php', 'shopAll.php', 'wishlist.php'];
+  if (redirect && allowedPages.some(page => redirect.includes(page)) && !redirect.includes('://')) {
     setTimeout(() => {
       window.location.href = redirect;
     }, 1500);

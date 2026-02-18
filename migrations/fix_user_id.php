@@ -1,4 +1,5 @@
 <?php
+if (php_sapi_name() !== 'cli') { http_response_code(403); echo 'Access denied'; exit; }
 require_once '../../../includes/config.php';
 
 // Alter table to allow NULL for user_id

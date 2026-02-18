@@ -1,5 +1,6 @@
 <?php
 // api/address/delete.php
+header('Content-Type: application/json');
 require_once '../../includes/config.php';
 
 // Check auth
@@ -17,22 +18,19 @@ if (!isset($data['id'])) {
     exit;
 }
 
-$user_id = $_SESSION['user_id'];
-$address_id = $conn->real_escape_string($data['id']);
+$user_id = intval($_SESSION['user_id']);
+$address_id = intval($data['id']);
 
-// Check if address belongs to user
-$check = $conn->query("SELECT id FROM addresses WHERE id = '$address_id' AND user_id = '$user_id'");
+// Delete address only if it belongs to user (IDOR protection)
+$stmt = $conn->prepare("DELETE FROM addresses WHERE id = ? AND user_id = ?");
+$stmt->bind_param("ii", $address_id, $user_id);
+$stmt->execute();
 
-if ($check->num_rows == 0) {
-    http_response_code(404);
-    echo json_encode(['status' => 'error', 'message' => 'Address not found']);
-    exit;
-}
-
-if ($conn->query("DELETE FROM addresses WHERE id = '$address_id'")) {
+if ($stmt->affected_rows > 0) {
     echo json_encode(['status' => 'success', 'message' => 'Address deleted']);
 } else {
-    http_response_code(500);
-    echo json_encode(['status' => 'error', 'message' => 'Database error']);
+    http_response_code(404);
+    echo json_encode(['status' => 'error', 'message' => 'Address not found']);
 }
+$stmt->close();
 ?>

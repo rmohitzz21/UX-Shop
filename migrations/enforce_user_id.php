@@ -1,4 +1,5 @@
 <?php
+if (php_sapi_name() !== 'cli') { http_response_code(403); echo 'Access denied'; exit; }
 require_once '../../../includes/config.php';
 
 // First, delete orders with NULL user_id to avoid constraint issues (or we could update them, but usually easier to start clean)

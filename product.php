@@ -312,9 +312,15 @@ $related_html = getRelatedProducts($conn, $product);
         </div>
 
         <div class="product-buttons">
-          <button class="buy-btn" onclick="addToCartWrapper(<?php echo $product_id; ?>)">Add to Cart</button>
-          
-          <button class="buy-btn buy-now-btn" onclick="handleBuyNowWrapper(<?php echo $product_id; ?>)">Buy Now</button>
+          <?php if ($stock <= 0 && $available_type === 'physical'): ?>
+            <button class="buy-btn" disabled style="opacity:0.5; cursor:not-allowed;">Out of Stock</button>
+          <?php else: ?>
+            <?php if ($stock > 0 && $stock <= 5 && $available_type !== 'digital'): ?>
+              <p style="color: #ef4444; font-size: 0.875rem; margin-bottom: 0.5rem; font-weight: 600;">Only <?php echo $stock; ?> left in stock!</p>
+            <?php endif; ?>
+            <button class="buy-btn" onclick="addToCartWrapper(<?php echo $product_id; ?>)">Add to Cart</button>
+            <button class="buy-btn buy-now-btn" onclick="handleBuyNowWrapper(<?php echo $product_id; ?>)">Buy Now</button>
+          <?php endif; ?>
         </div>
 
         <!-- TRUST CARDS -->

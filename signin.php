@@ -667,10 +667,12 @@ if (empty($_SESSION['csrf_token'])) {
       }
 
       function showOtpModal(phone) {
-          console.log(`Sending OTP to ${phone}`);
-          // Clear any previous OTP inputs/errors
-          document.getElementById('otp-input').value = '';
-          document.getElementById('otp-modal').style.display = 'flex';
+          // OTP login is not yet implemented on the backend
+          const errorDiv = document.getElementById('auth-error');
+          if (errorDiv) {
+              errorDiv.textContent = 'Phone login is coming soon. Please use your email and password to sign in.';
+              errorDiv.style.display = 'block';
+          }
       }
 
       function closeOtpModal() {
@@ -679,32 +681,12 @@ if (empty($_SESSION['csrf_token'])) {
       window.closeOtpModal = closeOtpModal;
 
       function verifyOtp() {
-          const otpInput = document.getElementById('otp-input');
-          const otp = otpInput.value.trim();
-          
-          if (/^\d{6}$/.test(otp)) {
-              // Verify OTP with API (simulated here)
-              const phone = document.getElementById('login-input').value;
-               const userData = {
-                    id: 'otp-' + phone,
-                    phone: phone,
-                    firstName: 'User',
-                    name: 'Mobile User',
-                    loginTime: new Date().toISOString()
-                };
-                localStorage.setItem('userSession', JSON.stringify(userData));
-                
-                // Check for redirect param
-                const urlParams = new URLSearchParams(window.location.search);
-                const redirect = urlParams.get('redirect');
-                if (redirect) {
-                    window.location.href = redirect;
-                } else {
-                    window.location.href = 'index.php';
-                }
-          } else {
-              alert('Please enter a valid 6-digit OTP');
-              otpInput.style.borderColor = '#ef4444';
+          // OTP verification not yet implemented
+          closeOtpModal();
+          const errorDiv = document.getElementById('auth-error');
+          if (errorDiv) {
+              errorDiv.textContent = 'Phone login is not yet available. Please use email login.';
+              errorDiv.style.display = 'block';
           }
       }
       window.verifyOtp = verifyOtp;

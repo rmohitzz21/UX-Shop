@@ -9,8 +9,13 @@ mysqli_report(MYSQLI_REPORT_OFF);
 // Configure Session
 if (session_status() === PHP_SESSION_NONE) {
     // Set cookie parameters BEFORE starting session
-    // Lifetime: 24 hours, Path: /, Domain: check manually or default, Secure: false (dev)
-    session_set_cookie_params(86400, '/');
+    // Lifetime: 24 hours, HttpOnly to prevent JS access, SameSite=Lax for CSRF protection
+    session_set_cookie_params([
+        'lifetime' => 86400,
+        'path' => '/',
+        'httponly' => true,
+        'samesite' => 'Lax'
+    ]);
     session_start();
 }
 
@@ -38,6 +43,11 @@ try {
         "message" => $e->getMessage()
     ]);
     exit;
+}
+
+// Generate CSRF token if not set
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 }
 
 // Global Helpers

@@ -1,9 +1,20 @@
 // Admin Dashboard JavaScript
 
+// HTML escaping utility to prevent XSS
+function escapeHtml(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 // Check admin authentication
 // Check admin authentication handled by PHP
 function checkAdminAuth() {
-  return true; 
+  return true;
 }
 
 // Admin logout
@@ -113,9 +124,9 @@ async function loadOverview() {
     const statusBadge = getStatusBadge(order.status || 'Pending');
     return `
       <tr>
-        <td>${order.order_number || 'N/A'}</td>
-        <td>${getOrderCustomerName(order)}</td>
-        <td>${orderDate.toLocaleDateString()}</td>
+        <td>${escapeHtml(order.order_number || 'N/A')}</td>
+        <td>${escapeHtml(getOrderCustomerName(order))}</td>
+        <td>${escapeHtml(orderDate.toLocaleDateString())}</td>
         <td>$${parseFloat(order.total || 0).toLocaleString()}</td>
         <td>${statusBadge}</td>
       </tr>
@@ -191,10 +202,10 @@ async function loadUsers() {
       
       return `
         <tr>
-          <td>${displayName}</td>
-          <td>${user.email || 'N/A'}</td>
-          <td>${user.phone || 'N/A'}</td>
-          <td>${dateString}</td>
+          <td>${escapeHtml(displayName)}</td>
+          <td>${escapeHtml(user.email || 'N/A')}</td>
+          <td>${escapeHtml(user.phone || 'N/A')}</td>
+          <td>${escapeHtml(dateString)}</td>
           <td>${ordersCount}</td>
           <td>${statusBadge}</td>
           <td>${blockButton}</td>
@@ -256,12 +267,12 @@ async function loadProducts() {
       
       return `
         <tr>
-          <td><img src="${product.image ? '../' + product.image : '../img/sticker.webp'}" alt="${product.name}" class="product-image" onerror="this.src='../img/sticker.webp'"></td>
-          <td>${product.name || 'N/A'}</td>
+          <td><img src="${product.image ? '../' + escapeHtml(product.image) : '../img/sticker.webp'}" alt="${escapeHtml(product.name)}" class="product-image" onerror="this.src='../img/sticker.webp'"></td>
+          <td>${escapeHtml(product.name || 'N/A')}</td>
           <td>${categoryBadge}</td>
           <td>$${parseFloat(product.price || 0).toLocaleString()}</td>
           <td>${product.stock || 0}</td>
-          <td>★ ${product.rating || '0.0'}</td>
+          <td>★ ${escapeHtml(product.rating || '0.0')}</td>
           <td>
             <label class="switch">
               <input type="checkbox" ${isChecked} onchange="toggleProductStatus(${product.id}, this)">
@@ -324,20 +335,25 @@ async function loadOrders() {
         const paymentMethod = order.payment_method || 'card';
         const paymentBadge = `<span class="badge badge-info">${paymentMethod.toUpperCase()}</span>`;
         
+        const safeOrderNumber = escapeHtml(order.order_number || 'N/A');
+        const safeCustomerName = escapeHtml(getOrderCustomerName(order));
+        const safeStatus = escapeHtml(order.status || 'Pending');
+        const orderId = parseInt(order.id, 10);
+
         return `
           <tr>
-            <td>${order.order_number || 'N/A'}</td>
-            <td>${getOrderCustomerName(order)}</td>
+            <td>${safeOrderNumber}</td>
+            <td>${safeCustomerName}</td>
             <td>${itemsCount} item(s)</td>
-            <td>${orderDate.toLocaleDateString()}</td>
+            <td>${escapeHtml(orderDate.toLocaleDateString())}</td>
             <td>$${parseFloat(order.total || 0).toLocaleString()}</td>
             <td>${paymentBadge}</td>
             <td>${statusBadge}</td>
             <td>
               <div class="action-buttons">
-                <button class="btn-small btn-edit" onclick="viewOrder('${order.id}')">View</button>
-                <button class="btn-small btn-edit" onclick="updateOrderStatus('${order.order_number}', '${order.status}', '${getOrderCustomerName(order).replace(/'/g, "\\'")}')">Update</button>
-                <button class="btn-small btn-delete" onclick="deleteOrder('${order.id}')">Delete</button>
+                <button class="btn-small btn-edit" onclick="viewOrder(${orderId})">View</button>
+                <button class="btn-small btn-edit" data-order-number="${safeOrderNumber}" data-order-status="${safeStatus}" data-customer-name="${safeCustomerName}" onclick="updateOrderStatusFromBtn(this)">Update</button>
+                <button class="btn-small btn-delete" onclick="deleteOrder(${orderId})">Delete</button>
               </div>
             </td>
           </tr>
@@ -708,41 +724,43 @@ async function viewOrder(orderId) {
         <tr>
           <td>
             <div style="display: flex; align-items: center; gap: 10px;">
-              <img src="../${item.image || 'img/sticker.webp'}" alt="${item.name}" style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px;">
+              <img src="../${escapeHtml(item.image || 'img/sticker.webp')}" alt="${escapeHtml(item.name)}" style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px;">
               <div>
-                <div style="font-weight: 600;">${item.name}</div>
-                ${item.size ? `<div style="font-size: 0.75rem; color: #fff;">Size: ${item.size}</div>` : ''}
+                <div style="font-weight: 600;">${escapeHtml(item.name)}</div>
+                ${item.size ? `<div style="font-size: 0.75rem; color: #fff;">Size: ${escapeHtml(item.size)}</div>` : ''}
               </div>
             </div>
           </td>
           <td>$${parseFloat(item.price).toFixed(2)}</td>
-          <td>${item.quantity}</td>
+          <td>${parseInt(item.quantity, 10)}</td>
           <td style="text-align: right;">$${(parseFloat(item.price) * item.quantity).toFixed(2)}</td>
         </tr>
       `).join('');
+
+      const custName = order.first_name ? `${escapeHtml(order.first_name)} ${escapeHtml(order.last_name)}` : (shipping.firstName ? `${escapeHtml(shipping.firstName)} ${escapeHtml(shipping.lastName)} (Guest)` : 'Guest');
 
       contentEl.innerHTML = `
         <div class="order-details-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem;">
           <div>
             <h3 style="font-size: 0.9rem; text-transform: uppercase; color: #666; margin-bottom: 0.5rem;">Customer Information</h3>
-            <p><strong>Name:</strong> ${order.first_name ? `${order.first_name} ${order.last_name}` : (shipping.firstName ? `${shipping.firstName} ${shipping.lastName} (Guest)` : 'Guest')}</p>
-            <p><strong>Email:</strong> ${order.email || shipping.email || 'N/A'}</p>
-            <p><strong>Phone:</strong> ${order.phone || shipping.phone || 'N/A'}</p>
+            <p><strong>Name:</strong> ${custName}</p>
+            <p><strong>Email:</strong> ${escapeHtml(order.email || shipping.email || 'N/A')}</p>
+            <p><strong>Phone:</strong> ${escapeHtml(order.phone || shipping.phone || 'N/A')}</p>
           </div>
           <div>
             <h3 style="font-size: 0.9rem; text-transform: uppercase; color: #666; margin-bottom: 0.5rem;">Order Information</h3>
-            <p><strong>Order ID:</strong> ${order.order_number}</p>
-            <p><strong>Date:</strong> ${new Date(order.created_at).toLocaleString()}</p>
+            <p><strong>Order ID:</strong> ${escapeHtml(order.order_number)}</p>
+            <p><strong>Date:</strong> ${escapeHtml(new Date(order.created_at).toLocaleString())}</p>
             <p><strong>Status:</strong> ${getStatusBadge(order.status)}</p>
-            <p><strong>Payment:</strong> <span class="badge badge-info">${order.payment_method.toUpperCase()}</span></p>
+            <p><strong>Payment:</strong> <span class="badge badge-info">${escapeHtml((order.payment_method || '').toUpperCase())}</span></p>
           </div>
         </div>
 
         <div style="margin-bottom: 2rem;">
           <h3 style="font-size: 0.9rem; text-transform: uppercase; color: #666; margin-bottom: 0.5rem;">Shipping Address</h3>
-          <p>${shipping.address || 'N/A'}, ${shipping.apartment || ''}</p>
-          <p>${shipping.city || 'N/A'}, ${shipping.postalCode || ''}</p>
-          <p>${shipping.country || 'N/A'}</p>
+          <p>${escapeHtml(shipping.address || 'N/A')}, ${escapeHtml(shipping.apartment || '')}</p>
+          <p>${escapeHtml(shipping.city || 'N/A')}, ${escapeHtml(shipping.postalCode || '')}</p>
+          <p>${escapeHtml(shipping.country || 'N/A')}</p>
         </div>
 
         <div class="order-items-table">
@@ -792,13 +810,21 @@ function closeOrderDetailsModal() {
   }
 }
 
+// Safe wrapper that reads from data attributes (no inline JS injection)
+function updateOrderStatusFromBtn(btn) {
+  const orderNumber = btn.dataset.orderNumber;
+  const currentStatus = btn.dataset.orderStatus;
+  const customerName = btn.dataset.customerName;
+  updateOrderStatus(orderNumber, currentStatus, customerName);
+}
+
 // Modal UI Functions (UI only - no logic)
 function updateOrderStatus(orderNumber, currentStatus, customerName) {
   document.getElementById('modal-order-number').textContent = orderNumber;
   document.getElementById('modal-order-customer').textContent = customerName;
   document.getElementById('modal-current-status').innerHTML = getStatusBadge(currentStatus);
   document.getElementById('status-select').value = currentStatus;
-  
+
   openStatusModal();
 }
 
@@ -1103,5 +1129,6 @@ window.closeStatusModal = closeStatusModal;
 window.confirmStatusUpdate = confirmStatusUpdate;
 window.toggleUserBlock = toggleUserBlock;
 window.toggleProductStatus = toggleProductStatus;
+window.updateOrderStatusFromBtn = updateOrderStatusFromBtn;
 window.handleMediaSelect = handleMediaSelect;
 window.handleCreateProduct = handleCreateProduct;

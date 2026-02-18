@@ -1,5 +1,6 @@
 <?php
 // api/cart/remove.php
+header('Content-Type: application/json');
 require_once '../../includes/config.php';
 
 // Check auth
@@ -11,24 +12,26 @@ if (!isset($_SESSION['user_id'])) {
 
 $data = json_decode(file_get_contents('php://input'), true);
 
-if (!isset($data['product_id']) || !isset($data['size']) || !isset($data['available_type'])) {
+if (!isset($data['product_id'])) {
     http_response_code(400);
-    echo json_encode(['status' => 'error', 'message' => 'Missing fields']);
+    echo json_encode(['status' => 'error', 'message' => 'Missing product_id']);
     exit;
 }
 
-$user_id = $_SESSION['user_id'];
+$user_id = intval($_SESSION['user_id']);
 $product_id = intval($data['product_id']);
-$size = $conn->real_escape_string($data['size']);
-$available_type = $conn->real_escape_string($data['available_type']);
+$size = isset($data['size']) ? substr($data['size'], 0, 20) : '';
+$available_type = isset($data['available_type']) ? substr($data['available_type'], 0, 20) : 'physical';
 
-// Delete item
-$sql = "DELETE FROM cart WHERE user_id = '$user_id' AND product_id = '$product_id' AND size = '$size' AND available_type = '$available_type'";
+$stmt = $conn->prepare("DELETE FROM cart WHERE user_id = ? AND product_id = ? AND size = ? AND available_type = ?");
+$stmt->bind_param("iiss", $user_id, $product_id, $size, $available_type);
 
-if ($conn->query($sql)) {
+if ($stmt->execute()) {
     echo json_encode(['status' => 'success', 'message' => 'Item removed from cart']);
 } else {
     http_response_code(500);
-    echo json_encode(['status' => 'error', 'message' => 'Database error: ' . $conn->error]);
+    echo json_encode(['status' => 'error', 'message' => 'Failed to remove item']);
 }
+$stmt->close();
+$conn->close();
 ?>

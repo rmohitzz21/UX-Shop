@@ -1,12 +1,5 @@
 <?php
 header('Content-Type: application/json');
-header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: POST, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type');
-
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    exit(0);
-}
 
 require_once '../../includes/config.php';
 
@@ -51,8 +44,12 @@ try {
         $quantity = intval($item['quantity']);
         // Use raw size for prepared statements to avoid double escaping
         $size = isset($item['size']) ? $item['size'] : '';
-        
+
         if ($quantity <= 0) continue;
+
+        if ($quantity > 10) {
+            throw new Exception("Maximum 10 items per product allowed");
+        }
 
         // Fetch Product Data (Price, Stock, Type) from DB
         $stmt = $conn->prepare("SELECT price, stock, available_type FROM products WHERE id = ? FOR UPDATE");
@@ -161,7 +158,7 @@ try {
     );
     
     if (!$stmt->execute()) {
-        throw new Exception("Error creating order: " . $stmt->error);
+        throw new Exception("Error creating order. Please try again.");
     }
     
     $order_id = $conn->insert_id;

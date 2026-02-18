@@ -40,17 +40,16 @@ try {
         $checkStmt->execute();
         $result = $checkStmt->get_result();
         
+        $max_per_product = 10;
+
         if ($row = $result->fetch_assoc()) {
-            // Update quantity
-            // Strategy: Add local quantity to DB quantity? Or replace?
-            // Usually merging means adding.
-            $new_quantity = $row['quantity'] + $quantity;
+            $new_quantity = min($row['quantity'] + $quantity, $max_per_product);
             $updateStmt = $conn->prepare("UPDATE cart SET quantity = ? WHERE id = ?");
             $updateStmt->bind_param("ii", $new_quantity, $row['id']);
             $updateStmt->execute();
             $updateStmt->close();
         } else {
-            // Insert new item
+            if ($quantity > $max_per_product) $quantity = $max_per_product;
             $insertStmt = $conn->prepare("INSERT INTO cart (user_id, product_id, quantity, size, available_type) VALUES (?, ?, ?, ?, ?)");
             $insertStmt->bind_param("iiiss", $user_id, $product_id, $quantity, $size, $available_type);
             $insertStmt->execute();

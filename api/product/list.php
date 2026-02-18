@@ -1,6 +1,5 @@
 <?php
 header('Content-Type: application/json');
-header('Access-Control-Allow-Origin: *');
 
 require_once '../../includes/config.php';
 
@@ -11,7 +10,7 @@ if ($conn->connect_error) {
 }
 
 // Fetch only active products
-$sql = "SELECT * FROM products WHERE is_active = 1 ORDER BY created_at DESC";
+$sql = "SELECT * FROM products WHERE is_active = 1 AND (stock > 0 OR available_type != 'physical') ORDER BY created_at DESC";
 $result = $conn->query($sql);
 
 $products = [];

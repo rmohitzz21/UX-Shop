@@ -1,5 +1,10 @@
 <?php
-
+// CLI-only script - block web access
+if (php_sapi_name() !== 'cli') {
+    http_response_code(403);
+    echo 'Access denied';
+    exit;
+}
 
 $baseUrl = "http://localhost/ux/Ux-Merchandise/";
 $cookieFile = sys_get_temp_dir() . '/cookie_test_' . time() . '.txt';

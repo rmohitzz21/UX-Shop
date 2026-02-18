@@ -153,13 +153,13 @@
             $offset = ($page - 1) * $limit;
 
             // Count total active products for pagination UI
-            $countSql = "SELECT COUNT(*) as total FROM products WHERE is_active = 1";
+            $countSql = "SELECT COUNT(*) as total FROM products WHERE is_active = 1 AND (stock > 0 OR available_type != 'physical')";
             $countResult = $conn->query($countSql);
             $totalProducts = $countResult->fetch_assoc()['total'];
             $totalPages = ceil($totalProducts / $limit);
 
             // Fetch products with LIMIT and OFFSET
-            $sql = "SELECT * FROM products WHERE is_active = 1 ORDER BY created_at DESC LIMIT ? OFFSET ?";
+            $sql = "SELECT * FROM products WHERE is_active = 1 AND (stock > 0 OR available_type != 'physical') ORDER BY created_at DESC LIMIT ? OFFSET ?";
             $stmt = $conn->prepare($sql);
             $stmt->bind_param("ii", $limit, $offset);
             $stmt->execute();
