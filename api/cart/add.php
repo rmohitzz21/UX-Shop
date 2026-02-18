@@ -22,10 +22,10 @@ $user_id = $_SESSION['user_id'];
 $product_id = intval($data['product_id']);
 $quantity = intval($data['quantity']);
 $size = isset($data['size']) ? $conn->real_escape_string($data['size']) : '';
-$product_type = isset($data['product_type']) ? $conn->real_escape_string($data['product_type']) : 'physical';
+$available_type = isset($data['available_type']) ? $conn->real_escape_string($data['available_type']) : 'physical';
 
 // Check if item exists in cart
-$check = $conn->query("SELECT id, quantity FROM cart WHERE user_id = '$user_id' AND product_id = '$product_id' AND size = '$size' AND product_type = '$product_type'");
+$check = $conn->query("SELECT id, quantity FROM cart WHERE user_id = '$user_id' AND product_id = '$product_id' AND size = '$size' AND available_type = '$available_type'");
 
 if ($check->num_rows > 0) {
     // Update quantity
@@ -35,7 +35,7 @@ if ($check->num_rows > 0) {
     echo json_encode(['status' => 'success', 'message' => 'Cart updated']);
 } else {
     // Insert new item
-    $sql = "INSERT INTO cart (user_id, product_id, quantity, size, product_type) VALUES ('$user_id', '$product_id', '$quantity', '$size', '$product_type')";
+    $sql = "INSERT INTO cart (user_id, product_id, quantity, size, available_type) VALUES ('$user_id', '$product_id', '$quantity', '$size', '$available_type')";
     if ($conn->query($sql)) {
         echo json_encode(['status' => 'success', 'message' => 'Item added to cart']);
     } else {

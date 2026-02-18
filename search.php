@@ -370,7 +370,7 @@
                 <div class="product-rating">★ ${product.rating}</div>
               </div>
               <div class="product-actions">
-                <button onclick="addToCart('${product.id}')" class="btn-primary small">Add to Cart</button>
+                <button onclick="addToCart('${product.id}', null, 1, {name: '${product.name}', price: ${product.price}, image: '${product.image}'}, '${product.available_type || 'physical'}')" class="btn-primary small">Add to Cart</button>
                 <a href="product.php" class="btn-ghost small">View Details</a>
               </div>
             </div>

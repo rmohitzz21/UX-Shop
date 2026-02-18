@@ -113,10 +113,37 @@
             <div class="cart-layout">
               <!-- Cart Items -->
               <div class="cart-items-wrapper">
-                <div id="cart-items" class="cart-items">
-                  <!-- Cart items will be loaded here -->
+                <!-- Digital Products Section -->
+                <div id="cart-section-digital" class="cart-type-section" style="display: none;">
+                  <div class="cart-section-header">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                      <polyline points="7 10 12 15 17 10"></polyline>
+                      <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    <h3>Digital Products</h3>
+                  </div>
+                  <div id="cart-items-digital" class="cart-items">
+                    <!-- Digital cart items rendered here -->
+                  </div>
                 </div>
-                
+
+                <!-- Physical Products Section -->
+                <div id="cart-section-physical" class="cart-type-section" style="display: none;">
+                  <div class="cart-section-header">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <rect x="1" y="3" width="15" height="13"></rect>
+                      <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
+                      <circle cx="5.5" cy="18.5" r="2.5"></circle>
+                      <circle cx="18.5" cy="18.5" r="2.5"></circle>
+                    </svg>
+                    <h3>Physical Products</h3>
+                  </div>
+                  <div id="cart-items-physical" class="cart-items">
+                    <!-- Physical cart items rendered here -->
+                  </div>
+                </div>
+
                 <div class="cart-empty" id="cart-empty" style="display: none;">
                     <img src="img/cart-icon.webp" alt="Empty Cart" />
                     <h2>Your cart is empty</h2>

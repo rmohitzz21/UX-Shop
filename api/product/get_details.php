@@ -35,7 +35,7 @@ if (empty($ids_string)) {
 }
 
 // Fetch products matching the IDs
-$sql = "SELECT id, name, price, image, description, category, stock FROM products WHERE id IN ($ids_string) AND is_active = 1";
+$sql = "SELECT id, name, price, image, description, category, stock, available_type FROM products WHERE id IN ($ids_string) AND is_active = 1";
 $result = $conn->query($sql);
 
 $products = [];

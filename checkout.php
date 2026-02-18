@@ -128,7 +128,17 @@
                   <!-- Shipping Information -->
                   <div class="checkout-block">
                     <h2 class="block-title">Shipping Information</h2>
-                    
+
+                    <!-- Digital delivery info (shown when cart has digital items) -->
+                    <div id="digital-delivery-info" class="digital-delivery-info" style="display: none;">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                      </svg>
+                      <span>Digital products will be delivered to your email address after purchase.</span>
+                    </div>
+
                     <div class="form-row">
                       <div class="form-field">
                         <label for="first-name">First Name *</label>
@@ -175,58 +185,57 @@
                       />
                     </div>
 
-                    <div class="form-field">
-                      <label for="address">Street Address *</label>
-                      <input
-                        id="address"
-                        name="address"
-                        type="text"
-                        required
-                        placeholder="House/Flat No., Building Name"
-                      />
-                    </div>
+                    <!-- Shipping address fields (hidden for digital-only orders) -->
+                    <div id="shipping-fields">
+                      <div class="form-field">
+                        <label for="address">Street Address *</label>
+                        <input
+                          id="address"
+                          name="address"
+                          type="text"
+                          placeholder="House/Flat No., Building Name"
+                        />
+                      </div>
 
-                    <div class="form-row">
-                      <div class="form-field">
-                        <label for="city">City *</label>
-                        <input
-                          id="city"
-                          name="city"
-                          type="text"
-                          required
-                        />
+                      <div class="form-row">
+                        <div class="form-field">
+                          <label for="city">City *</label>
+                          <input
+                            id="city"
+                            name="city"
+                            type="text"
+                          />
+                        </div>
+                        <div class="form-field">
+                          <label for="state">State *</label>
+                          <input
+                            id="state"
+                            name="state"
+                            type="text"
+                          />
+                        </div>
                       </div>
-                      <div class="form-field">
-                        <label for="state">State *</label>
-                        <input
-                          id="state"
-                          name="state"
-                          type="text"
-                          required
-                        />
-                      </div>
-                    </div>
 
-                    <div class="form-row">
-                      <div class="form-field">
-                        <label for="zip">ZIP/Postal Code *</label>
-                        <input
-                          id="zip"
-                          name="zip"
-                          type="text"
-                          required
-                          pattern="[\d]+"
-                        />
-                      </div>
-                      <div class="form-field">
-                        <label for="country">Country *</label>
-                        <select id="country" name="country" required style="background-color: #050519; color: #fff;">
-                          <option value="IN" style="color: #fff;">India</option>
-                          <option value="US" style="color: #fff;">United States</option>
-                          <option value="UK" style="color: #fff;">United Kingdom</option>
-                          <option value="CA" style="color: #fff;">Canada</option>
-                          <option value="AU" style="color: #fff;">Australia</option>
-                        </select>
+                      <div class="form-row">
+                        <div class="form-field">
+                          <label for="zip">ZIP/Postal Code *</label>
+                          <input
+                            id="zip"
+                            name="zip"
+                            type="text"
+                            pattern="[\d]+"
+                          />
+                        </div>
+                        <div class="form-field">
+                          <label for="country">Country *</label>
+                          <select id="country" name="country" style="background-color: #050519; color: #fff;">
+                            <option value="IN" style="color: #fff;">India</option>
+                            <option value="US" style="color: #fff;">United States</option>
+                            <option value="UK" style="color: #fff;">United Kingdom</option>
+                            <option value="CA" style="color: #fff;">Canada</option>
+                            <option value="AU" style="color: #fff;">Australia</option>
+                          </select>
+                        </div>
                       </div>
                     </div>
                   </div>

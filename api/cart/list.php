@@ -10,7 +10,7 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 $user_id = $_SESSION['user_id'];
-$sql = "SELECT c.id, c.product_id, c.quantity, c.size, c.product_type,
+$sql = "SELECT c.id, c.product_id, c.quantity, c.size, c.available_type,
         p.name, p.price, p.image, p.description, p.stock
         FROM cart c
         JOIN products p ON c.product_id = p.id
@@ -29,7 +29,7 @@ while ($row = $result->fetch_assoc()) {
         'description' => $row['description'],
         'quantity' => intval($row['quantity']),
         'size' => $row['size'],
-        'product_type' => $row['product_type'],
+        'available_type' => $row['available_type'],
         'stock' => intval($row['stock'])
     ];
 }

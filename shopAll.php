@@ -173,6 +173,7 @@
                     $jsName = addslashes($row['name']);
                     $jsImage = addslashes($row['image']);
                     $jsCategory = addslashes($row['category']);
+                    $jsAvailableType = addslashes($row['available_type'] ?? 'physical');
                     
                     $price = number_format($row['price'], 2);
                     $old_price = !empty($row['old_price']) ? number_format($row['old_price'], 2) : '';
@@ -205,7 +206,7 @@
                           <div class='product-rating'>★ $rating</div>
                         </div>
                         <div class='product-actions'>
-                          <button onclick=\"addToCart('$id', null, 1, {name: '$jsName', price: " . $row['price'] . ", image: '$jsImage', category: '$jsCategory'})\" class='btn-primary small' aria-label='Add to cart' " . ($row['stock'] <= 0 ? 'disabled' : '') . ">Add to Cart</button>
+                          <button onclick=\"addToCart('$id', null, 1, {name: '$jsName', price: " . $row['price'] . ", image: '$jsImage', category: '$jsCategory'}, '$jsAvailableType')\" class='btn-primary small' aria-label='Add to cart' " . ($row['stock'] <= 0 ? 'disabled' : '') . ">Add to Cart</button>
                           <a href='product.php?id=$id' class='btn-ghost small'>View Details</a>
                         </div>
                       </div>

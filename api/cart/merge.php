@@ -28,15 +28,15 @@ try {
         $product_id = intval($item['id']);
         $quantity = intval($item['quantity']);
         $size = isset($item['size']) ? $item['size'] : ''; // Raw size
-        $product_type = isset($item['product_type']) ? $item['product_type'] : 'physical';
+        $available_type = isset($item['available_type']) ? $item['available_type'] : 'physical';
         
         // Validation
         if ($quantity <= 0) continue;
         
         // Use prepared statements to check if item exists in DB cart for this user
-        $checkStmt = $conn->prepare("SELECT id, quantity FROM cart WHERE user_id = ? AND product_id = ? AND (size = ? OR size IS NULL OR size = '') AND product_type = ? FOR UPDATE");
+        $checkStmt = $conn->prepare("SELECT id, quantity FROM cart WHERE user_id = ? AND product_id = ? AND (size = ? OR size IS NULL OR size = '') AND available_type = ? FOR UPDATE");
         // Bind params: iiss 
-        $checkStmt->bind_param("iiss", $user_id, $product_id, $size, $product_type);
+        $checkStmt->bind_param("iiss", $user_id, $product_id, $size, $available_type);
         $checkStmt->execute();
         $result = $checkStmt->get_result();
         
@@ -51,8 +51,8 @@ try {
             $updateStmt->close();
         } else {
             // Insert new item
-            $insertStmt = $conn->prepare("INSERT INTO cart (user_id, product_id, quantity, size, product_type) VALUES (?, ?, ?, ?, ?)");
-            $insertStmt->bind_param("iiiss", $user_id, $product_id, $quantity, $size, $product_type);
+            $insertStmt = $conn->prepare("INSERT INTO cart (user_id, product_id, quantity, size, available_type) VALUES (?, ?, ?, ?, ?)");
+            $insertStmt->bind_param("iiiss", $user_id, $product_id, $quantity, $size, $available_type);
             $insertStmt->execute();
             $insertStmt->close();
         }

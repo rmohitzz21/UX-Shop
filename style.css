@@ -3977,6 +3977,63 @@ body.shopAll .cta-card {
   margin-bottom: 24px;
 }
 
+/* Cart Type Sections (Digital / Physical) */
+.cart-type-section {
+  margin-bottom: 24px;
+}
+
+.cart-type-section:last-of-type {
+  margin-bottom: 0;
+}
+
+.cart-section-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 0;
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.cart-section-header svg {
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+.cart-section-header h3 {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0;
+  color: var(--text-primary, #fff);
+}
+
+/* Digital delivery info message */
+.digital-delivery-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  background: rgba(99, 102, 241, 0.1);
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  border-radius: 12px;
+  margin-bottom: 16px;
+  font-size: 0.875rem;
+  color: #a5b4fc;
+}
+
+.digital-delivery-info svg {
+  flex-shrink: 0;
+}
+
+/* Shipping fields wrapper for conditional show/hide */
+#shipping-fields {
+  transition: opacity 0.3s ease, max-height 0.3s ease;
+}
+
+#shipping-fields.hidden {
+  display: none;
+}
+
 .cart-summary-wrapper {
   position: sticky;
   top: 100px;

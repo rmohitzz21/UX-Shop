@@ -111,6 +111,7 @@ function getRelatedProducts($conn, $product) {
                 $jsRName = addslashes($rel['name']);
                 $jsRImage = addslashes($rel['image']);
                 $jsRCategory = addslashes($rel['category']);
+                $jsRAvailableType = addslashes($rel['available_type'] ?? 'physical');
                 
                 $related_html .= "
                   <article class='product-card' data-category='$r_cat'>
@@ -127,7 +128,7 @@ function getRelatedProducts($conn, $product) {
                         <div class='product-rating'>★ $r_rating</div>
                       </div>
                       <div class='product-actions'>
-                        <button onclick=\"addToCart('$r_id', null, 1, {name: '$jsRName', price: {$rel['price']}, image: '$jsRImage', category: '$jsRCategory'})\" class='btn-primary small' aria-label='Add to cart'>Add to Cart</button>
+                        <button onclick=\"addToCart('$r_id', null, 1, {name: '$jsRName', price: {$rel['price']}, image: '$jsRImage', category: '$jsRCategory'}, '$jsRAvailableType')\" class='btn-primary small' aria-label='Add to cart'>Add to Cart</button>
                         <a href='product.php?id=$r_id' class='btn-ghost small'>View Details</a>
                       </div>
                     </div>

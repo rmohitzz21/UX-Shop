@@ -74,8 +74,8 @@ try {
         // Digital Check
         // If product is strictly digital, flag it. 
         // If it's "both" and user selected digital, flag it (we trust user selection for format if 'both')
-        // Current cart logic sends 'product_type' in item.
-        $selected_type = isset($item['product_type']) ? $item['product_type'] : 'physical';
+        // Current cart logic sends 'available_type' in item.
+        $selected_type = isset($item['available_type']) ? $item['available_type'] : 'physical';
         
         if ($type === 'digital' || ($type === 'both' && $selected_type === 'digital')) {
             $has_digital_items = true;
@@ -114,7 +114,19 @@ try {
     }
     
     // 4. Calculate Taxes & Shipping
-    $shipping_cost = ($calculated_subtotal > 0) ? 50.00 : 0.00;
+    // Determine if all items are digital — if so, shipping is free
+    $all_digital = true;
+    foreach ($order_items_data as $oi) {
+        if (isset($oi['type']) && $oi['type'] !== 'digital') {
+            $all_digital = false;
+            break;
+        }
+        if (!isset($oi['type'])) {
+            $all_digital = false;
+            break;
+        }
+    }
+    $shipping_cost = ($calculated_subtotal > 0 && !$all_digital) ? 50.00 : 0.00;
     $tax = round($calculated_subtotal * 0.18, 2);
     $calculated_total = $calculated_subtotal + $shipping_cost + $tax;
     
@@ -159,7 +171,7 @@ try {
     $stmt_item = $conn->prepare("INSERT INTO order_items (order_id, product_id, quantity, price, size) VALUES (?, ?, ?, ?, ?)");
     
     // Check for size matching (handling empty/null)
-    $delete_cart = $conn->prepare("DELETE FROM cart WHERE user_id = ? AND product_id = ? AND (size = ? OR size = '' OR size IS NULL) AND product_type = ?");
+    $delete_cart = $conn->prepare("DELETE FROM cart WHERE user_id = ? AND product_id = ? AND (size = ? OR size = '' OR size IS NULL) AND available_type = ?");
     
     foreach ($order_items_data as $item) {
         // Insert into order_items

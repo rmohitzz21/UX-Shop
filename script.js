@@ -591,8 +591,10 @@ function addToCart(productId, size = null, quantity = 1, explicitDetails = null,
        description: (explicitDetails && explicitDetails.description) ? explicitDetails.description : ''
     };
   
-    // Get product_type priority: Argument > localStorage > default
-    const product_type = productFormat || localStorage.getItem('product_type') || 'physical';
+    // Get available_type priority: Argument > localStorage > default
+    // If product is 'both', default to 'physical' (user chooses on product page)
+    let available_type = productFormat || localStorage.getItem('available_type') || 'physical';
+    if (available_type === 'both') available_type = 'physical';
     
     const userSession = getUserSession();
   
@@ -602,7 +604,7 @@ function addToCart(productId, size = null, quantity = 1, explicitDetails = null,
             product_id: productId,
             quantity: quantity,
             size: size,
-            product_type: product_type
+            available_type: available_type
         };
   
         fetch('api/cart/add.php', {
@@ -630,7 +632,7 @@ function addToCart(productId, size = null, quantity = 1, explicitDetails = null,
     } else {
         // GUEST: Use LocalStorage
         const existingIndex = cart.findIndex(
-          item => item.id === productId && item.size === size && item.product_type === product_type
+          item => item.id === productId && item.size === size && item.available_type === available_type
         );
         
         if (existingIndex > -1) {
@@ -643,7 +645,7 @@ function addToCart(productId, size = null, quantity = 1, explicitDetails = null,
             image: product.image,
             size: size,
             quantity: quantity,
-            product_type: product_type,
+            available_type: available_type,
             description: product.description
           });
         }
@@ -671,9 +673,9 @@ function normalizeSize(s) {
 function removeFromCart(productId, size = null) {
   const userSession = getUserSession();
   
-  // Find item to get its product_type (needed for API)
+  // Find item to get its available_type (needed for API)
   const item = cart.find(i => String(i.id) === String(productId) && normalizeSize(i.size) === normalizeSize(size));
-  const product_type = item ? (item.product_type || 'physical') : 'physical';
+  const available_type = item ? (item.available_type || 'physical') : 'physical';
 
   if (userSession && userSession.id) {
       // LOGGED IN: API
@@ -683,7 +685,7 @@ function removeFromCart(productId, size = null) {
           body: JSON.stringify({
               product_id: productId,
               size: size,
-              product_type: product_type
+              available_type: available_type
           })
       })
       .then(res => res.json())
@@ -722,9 +724,9 @@ function updateCartQuantity(productId, size, newQuantity) {
       return;
   }
 
-  // Find item to get its product_type (needed for API)
+  // Find item to get its available_type (needed for API)
   const item = cart.find(i => String(i.id) === String(productId) && normalizeSize(i.size) === normalizeSize(size));
-  const product_type = item ? (item.product_type || 'physical') : 'physical';
+  const available_type = item ? (item.available_type || 'physical') : 'physical';
   
   if (userSession && userSession.id) {
      // LOGGED IN: API
@@ -735,7 +737,7 @@ function updateCartQuantity(productId, size, newQuantity) {
              product_id: productId,
              quantity: newQuantity,
              size: size,
-             product_type: product_type
+             available_type: available_type
          })
      })
      .then(res => res.json())
@@ -801,54 +803,52 @@ let globalProductDetailsCache = {};
 
 // Load cart page
 async function loadCartPage() {
-  const cartItemsContainer = document.getElementById('cart-items');
+  const digitalContainer = document.getElementById('cart-items-digital');
+  const physicalContainer = document.getElementById('cart-items-physical');
+  const digitalSection = document.getElementById('cart-section-digital');
+  const physicalSection = document.getElementById('cart-section-physical');
   const cartEmpty = document.getElementById('cart-empty');
   const checkoutBtn = document.getElementById('checkout-btn');
-  
-  if (!cartItemsContainer) return;
 
-  // Handle empty cart
-  // Handle empty cart
+  if (!digitalContainer && !physicalContainer) return;
+
   const cartSummary = document.querySelector('.cart-summary-wrapper');
-  
+
   if (cart.length === 0) {
-    
     if (cartEmpty) cartEmpty.style.display = 'block';
-    
-    // Hide summary panel when empty for better interface
     if (cartSummary) cartSummary.style.display = 'none';
-    
-    // Clear any previous items
-    cartItemsContainer.innerHTML = '';
+    if (digitalSection) digitalSection.style.display = 'none';
+    if (physicalSection) physicalSection.style.display = 'none';
+    if (digitalContainer) digitalContainer.innerHTML = '';
+    if (physicalContainer) physicalContainer.innerHTML = '';
     return;
   }
-  
+
   if (cartEmpty) cartEmpty.style.display = 'none';
   if (cartSummary) cartSummary.style.display = 'block';
 
-  // Helper function to render cart HTML using current cart + data source
-  const renderCartHTML = (detailsSource) => {
-      let subtotal = 0;
-      const html = cart.map(item => {
-        // Try to get details from source (Cache or API result), fallback to local item
-        const apiProduct = detailsSource[item.id] || detailsSource[String(item.id)];
-        
-        const name = apiProduct ? apiProduct.name : (item.name || 'Loading...');
-        const image = apiProduct ? apiProduct.image : (item.image || 'img/sticker.webp');
-        const price = apiProduct ? Number(apiProduct.price) : (item.price || 0);
-        const description = apiProduct ? apiProduct.description : (item.description || '');
-        
-        const itemTotal = price * item.quantity;
-        subtotal += itemTotal;
+  // Helper: render a single cart item HTML
+  const renderItemHTML = (item, detailsSource) => {
+    const apiProduct = detailsSource[item.id] || detailsSource[String(item.id)];
+    const name = apiProduct ? apiProduct.name : (item.name || 'Loading...');
+    const image = apiProduct ? apiProduct.image : (item.image || 'img/sticker.webp');
+    const price = apiProduct ? Number(apiProduct.price) : (item.price || 0);
+    const description = apiProduct ? apiProduct.description : (item.description || '');
+    // Use product's available_type from API as fallback if cart item doesn't have it
+    const productType = item.available_type || (apiProduct ? apiProduct.available_type : 'physical');
+    // Sync back to cart item so filters work correctly
+    if (!item.available_type && productType) item.available_type = productType;
+    const itemTotal = price * item.quantity;
 
-        return `
+    return {
+      html: `
         <div class="cart-item">
           <img src="${image}" alt="${name}" class="cart-item-image" onerror="this.src='img/sticker.webp'" />
           <div class="cart-item-details">
             <h3 class="cart-item-title">${name}</h3>
             <p class="cart-item-desc" style="font-size: 0.85rem; color: #777; margin-bottom: 4px;">${description || ''}</p>
             <p class="cart-item-meta">
-              ${item.product_type ? `Format: <span style="text-transform:capitalize">${item.product_type}</span> • ` : ''}
+              ${productType ? `Format: <span style="text-transform:capitalize">${productType}</span> • ` : ''}
               ${item.size ? `Size: ${item.size} • ` : ''}
               Quantity: ${item.quantity}
             </p>
@@ -863,23 +863,68 @@ async function loadCartPage() {
             <button class="remove-item" onclick="removeFromCart('${item.id}', '${item.size || ''}')">Remove</button>
           </div>
         </div>
-      `}).join('');
-      
-      cartItemsContainer.innerHTML = html;
-      
-      // Update totals
-      const hasPhysicalItems = cart.some(item => (item.product_type === 'physical' || !item.product_type));
+      `,
+      total: itemTotal
+    };
+  };
+
+  // Helper function to render cart HTML split by product type
+  const renderCartHTML = (detailsSource) => {
+      let subtotal = 0;
+
+      // Sync available_type from product API data before filtering
+      cart.forEach(item => {
+        if (!item.available_type || item.available_type === 'physical') {
+          const apiProduct = detailsSource[item.id] || detailsSource[String(item.id)];
+          if (apiProduct && apiProduct.available_type) {
+            // Use product's available_type (but 'both' defaults to what cart stored)
+            if (apiProduct.available_type === 'digital') {
+              item.available_type = 'digital';
+            } else if (apiProduct.available_type === 'both' && !item.available_type) {
+              item.available_type = 'physical'; // default for 'both'
+            }
+          }
+        }
+      });
+
+      const digitalItems = cart.filter(item => item.available_type === 'digital');
+      const physicalItems = cart.filter(item => item.available_type !== 'digital');
+
+      // Render digital items
+      if (digitalItems.length > 0) {
+        const digitalResults = digitalItems.map(item => renderItemHTML(item, detailsSource));
+        digitalContainer.innerHTML = digitalResults.map(r => r.html).join('');
+        subtotal += digitalResults.reduce((sum, r) => sum + r.total, 0);
+        if (digitalSection) digitalSection.style.display = 'block';
+      } else {
+        if (digitalContainer) digitalContainer.innerHTML = '';
+        if (digitalSection) digitalSection.style.display = 'none';
+      }
+
+      // Render physical items
+      if (physicalItems.length > 0) {
+        const physicalResults = physicalItems.map(item => renderItemHTML(item, detailsSource));
+        physicalContainer.innerHTML = physicalResults.map(r => r.html).join('');
+        subtotal += physicalResults.reduce((sum, r) => sum + r.total, 0);
+        if (physicalSection) physicalSection.style.display = 'block';
+      } else {
+        if (physicalContainer) physicalContainer.innerHTML = '';
+        if (physicalSection) physicalSection.style.display = 'none';
+      }
+
+      // Update totals — shipping is $0 if only digital items
+      const hasPhysicalItems = physicalItems.length > 0;
       const shipping = (subtotal > 0 && hasPhysicalItems) ? 50 : 0;
       const tax = Math.round(subtotal * 0.18);
       const total = subtotal + shipping + tax;
-      
+
       if(document.getElementById('cart-subtotal')) {
           document.getElementById('cart-subtotal').textContent = `$${subtotal.toLocaleString()}`;
           document.getElementById('cart-shipping').textContent = shipping > 0 ? `$${shipping}` : 'Free';
           document.getElementById('cart-tax').textContent = `$${tax.toLocaleString()}`;
           document.getElementById('cart-total').textContent = `$${total.toLocaleString()}`;
       }
-      
+
       // Show/Hide checkout button based on signin
       const userSession = getUserSession();
       if (checkoutBtn) {
@@ -895,32 +940,28 @@ async function loadCartPage() {
       }
   };
 
-  // STRATEGY: 
+  // STRATEGY:
   // 1. If we have cached data, RENDER IMMEDIATELY. This makes +/- instant.
   // 2. If we lack data, show loading.
   // 3. Always fetch fresh data in background to ensure price accuracy.
 
-  // Optimization: If cart items already have details (from API list), use them directly
-  // This avoids the "Updating..." state and refresh requirement
   const hasDetails = cart.length > 0 && cart[0].name && cart[0].price && cart[0].image;
-  
   const hasCache = Object.keys(globalProductDetailsCache).length > 0;
 
   if (hasDetails) {
-      // Map cart items to a structure compatible with renderCartHTML
-      // renderCartHTML expects a source object keyed by ID
       const source = {};
       cart.forEach(item => source[item.id] = item);
       renderCartHTML(source);
   } else if (hasCache) {
       renderCartHTML(globalProductDetailsCache);
   } else {
-      cartItemsContainer.innerHTML = '<p style="text-align:center; padding:20px;">Updating cart details...</p>';
+      if (physicalContainer) physicalContainer.innerHTML = '<p style="text-align:center; padding:20px;">Updating cart details...</p>';
+      if (physicalSection) physicalSection.style.display = 'block';
   }
 
   // Fetch up-to-date product details (Background update)
   const uniqueIds = [...new Set(cart.map(item => parseInt(item.id)))];
-  
+
   try {
       const response = await fetch('api/product/get_details.php', {
           method: 'POST',
@@ -928,15 +969,13 @@ async function loadCartPage() {
           body: JSON.stringify({ ids: uniqueIds })
       });
       const result = await response.json();
-      
+
       if (result.status === 'success') {
           globalProductDetailsCache = { ...globalProductDetailsCache, ...result.data };
-          // Re-render with fresh data
           renderCartHTML(globalProductDetailsCache);
       }
   } catch (e) {
       console.error("Error fetching cart details", e);
-      // If we failed to fetch and didn't render yet (no cache), render with local fallback
       if (!hasCache) {
            renderCartHTML({});
       }
@@ -974,33 +1013,54 @@ function loadCheckoutPage() {
       <img src="${item.image}" alt="${item.name}" class="checkout-item-image" onerror="this.src='img/sticker.webp'" />
       <div class="checkout-item-info">
         <div class="checkout-item-name">${item.name}</div>
-        <div class="checkout-item-details">${item.size ? `Size: ${item.size} • ` : ''}Qty: ${item.quantity}</div>
+        <div class="checkout-item-details">
+          ${item.available_type ? `<span style="text-transform:capitalize">${item.available_type}</span> • ` : ''}
+          ${item.size ? `Size: ${item.size} • ` : ''}Qty: ${item.quantity}
+        </div>
       </div>
       <div class="checkout-item-price">$${(item.price * item.quantity).toLocaleString()}</div>
     </div>
   `).join('');
-  
+
+  // Determine cart composition
+  const hasDigital = cart.some(item => item.available_type === 'digital');
+  const hasPhysical = cart.some(item => item.available_type === 'physical' || !item.available_type);
+  const onlyDigital = hasDigital && !hasPhysical;
+
   // Update totals
   const subtotal = getCartTotal();
-  // Check if any physical items exist to determine shipping
-  const hasPhysicalItems = cart.some(item => (item.product_type === 'physical' || !item.product_type));
-  const shipping = (subtotal > 0 && hasPhysicalItems) ? 50 : 0;
-  
+  const shipping = (subtotal > 0 && hasPhysical) ? 50 : 0;
   const tax = Math.round(subtotal * 0.18);
   const total = subtotal + shipping + tax;
-  
+
   document.getElementById('checkout-subtotal').textContent = `$${subtotal.toLocaleString()}`;
-  document.getElementById('checkout-shipping').textContent = `$${shipping}`;
+  document.getElementById('checkout-shipping').textContent = shipping > 0 ? `$${shipping}` : 'Free';
   document.getElementById('checkout-tax').textContent = `$${tax.toLocaleString()}`;
   document.getElementById('checkout-total').textContent = `$${total.toLocaleString()}`;
 
+  // Show/hide shipping address fields based on cart composition
+  const shippingFields = document.getElementById('shipping-fields');
+  const digitalDeliveryInfo = document.getElementById('digital-delivery-info');
+  const blockTitle = document.querySelector('.checkout-block .block-title');
+
+  if (onlyDigital) {
+    // Hide shipping address, show digital delivery message
+    if (shippingFields) shippingFields.classList.add('hidden');
+    if (digitalDeliveryInfo) digitalDeliveryInfo.style.display = 'flex';
+    if (blockTitle) blockTitle.textContent = 'Contact Information';
+  } else {
+    // Show shipping address
+    if (shippingFields) shippingFields.classList.remove('hidden');
+    if (digitalDeliveryInfo) digitalDeliveryInfo.style.display = hasDigital ? 'flex' : 'none';
+    if (blockTitle) blockTitle.textContent = 'Shipping Information';
+  }
+
   // Handle COD availability
-  const hasDigitalProduct = cart.some(item => item.product_type === 'digital');
   const codOption = document.getElementById('cod-option');
   const codRadio = document.getElementById('cod-radio');
   const codMessage = document.getElementById('cod-disabled-message');
 
-  if (hasDigitalProduct) {
+  if (hasDigital) {
       if (codRadio) { codRadio.disabled = true; codRadio.checked = false; }
       if (codMessage) codMessage.style.display = 'block';
       if (codOption) {
@@ -1605,10 +1665,14 @@ function handleCheckout(event) {
   const btn = document.getElementById('place-order-btn');
   const btnText = document.getElementById('order-text');
   const btnLoader = document.getElementById('order-loader');
-  
+
+  // Determine cart composition for conditional validation
+  const hasPhysicalInCart = cart.some(item => item.available_type === 'physical' || !item.available_type);
+  const onlyDigitalInCart = !hasPhysicalInCart;
+
   // Validation
   let isValid = true;
-  
+
   // Shipping information validation
   const firstName = form.firstName?.value.trim();
   const lastName = form.lastName?.value.trim();
@@ -1620,17 +1684,17 @@ function handleCheckout(event) {
   const zip = form.zip?.value.trim();
   const country = form.country?.value;
   const paymentMethod = form.paymentMethod?.value;
-  
+
   if (!firstName || firstName.length < 2) {
     if (form.firstName) showFieldError(form.firstName, 'First name must be at least 2 characters');
     isValid = false;
   } else if (form.firstName) clearFieldError(form.firstName);
-  
+
   if (!lastName || lastName.length < 2) {
     if (form.lastName) showFieldError(form.lastName, 'Last name must be at least 2 characters');
     isValid = false;
   } else if (form.lastName) clearFieldError(form.lastName);
-  
+
   if (!email) {
     if (form.email) showFieldError(form.email, 'Email is required');
     isValid = false;
@@ -1638,7 +1702,7 @@ function handleCheckout(event) {
     if (form.email) showFieldError(form.email, 'Please enter a valid email address');
     isValid = false;
   } else if (form.email) clearFieldError(form.email);
-  
+
   if (!phone) {
     if (form.phone) showFieldError(form.phone, 'Phone number is required');
     isValid = false;
@@ -1646,26 +1710,29 @@ function handleCheckout(event) {
     if (form.phone) showFieldError(form.phone, 'Please enter a valid phone number');
     isValid = false;
   } else if (form.phone) clearFieldError(form.phone);
-  
-  if (!address || address.length < 5) {
-    if (form.address) showFieldError(form.address, 'Please enter a valid address');
-    isValid = false;
-  } else if (form.address) clearFieldError(form.address);
-  
-  if (!city || city.length < 2) {
-    if (form.city) showFieldError(form.city, 'City is required');
-    isValid = false;
-  } else if (form.city) clearFieldError(form.city);
-  
-  if (!state || state.length < 2) {
-    if (form.state) showFieldError(form.state, 'State is required');
-    isValid = false;
-  } else if (form.state) clearFieldError(form.state);
-  
-  if (!zip || zip.length < 4) {
-    if (form.zip) showFieldError(form.zip, 'Please enter a valid ZIP code');
-    isValid = false;
-  } else if (form.zip) clearFieldError(form.zip);
+
+  // Address validation — only required when cart has physical items
+  if (!onlyDigitalInCart) {
+    if (!address || address.length < 5) {
+      if (form.address) showFieldError(form.address, 'Please enter a valid address');
+      isValid = false;
+    } else if (form.address) clearFieldError(form.address);
+
+    if (!city || city.length < 2) {
+      if (form.city) showFieldError(form.city, 'City is required');
+      isValid = false;
+    } else if (form.city) clearFieldError(form.city);
+
+    if (!state || state.length < 2) {
+      if (form.state) showFieldError(form.state, 'State is required');
+      isValid = false;
+    } else if (form.state) clearFieldError(form.state);
+
+    if (!zip || zip.length < 4) {
+      if (form.zip) showFieldError(form.zip, 'Please enter a valid ZIP code');
+      isValid = false;
+    } else if (form.zip) clearFieldError(form.zip);
+  }
   
   // Payment method validation
   if (paymentMethod === 'card') {
@@ -1707,13 +1774,11 @@ function handleCheckout(event) {
   
   // Calculate totals
   const subtotal = getCartTotal();
-  const hasPhysicalItems = cart.some(item => (item.product_type === 'physical' || !item.product_type));
-  const shippingCost = (subtotal > 0 && hasPhysicalItems) ? 50 : 0;
+  const shippingCost = (subtotal > 0 && !onlyDigitalInCart) ? 50 : 0;
   const tax = Math.round(subtotal * 0.18);
   const total = subtotal + shippingCost + tax;
-  
+
   // Get User ID
-  // userSession is already defined at start of function
   const userId = userSession ? userSession.id : 0;
 
   // Prepare Order Data
@@ -1725,7 +1790,8 @@ function handleCheckout(event) {
       price: item.price,
       image: item.image,
       size: item.size,
-      quantity: item.quantity
+      quantity: item.quantity,
+      available_type: item.available_type || 'physical'
     })),
     total: total,
     subtotal: subtotal,
@@ -1737,11 +1803,11 @@ function handleCheckout(event) {
       lastName: form.lastName?.value || '',
       email: form.email?.value || '',
       phone: form.phone?.value || '',
-      address: form.address?.value || '',
-      city: form.city?.value || '',
-      state: form.state?.value || '',
-      zip: form.zip?.value || '',
-      country: form.country?.value || 'IN'
+      address: onlyDigitalInCart ? '' : (form.address?.value || ''),
+      city: onlyDigitalInCart ? '' : (form.city?.value || ''),
+      state: onlyDigitalInCart ? '' : (form.state?.value || ''),
+      zip: onlyDigitalInCart ? '' : (form.zip?.value || ''),
+      country: onlyDigitalInCart ? '' : (form.country?.value || 'IN')
     }
   };
   
