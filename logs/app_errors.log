@@ -1,0 +1,18 @@
+[19-Feb-2026 09:40:46 Europe/Berlin] PHP Warning:  Undefined array key "user_id" in D:\xampp\htdocs\ux\Ux-Merchandise\api\order\get.php on line 7
+[20-Feb-2026 06:48:28 Europe/Berlin] PHP Warning:  mysqli::__construct(): (HY000/2002): No connection could be made because the target machine actively refused it in D:\xampp\htdocs\ux\Ux-Merchandise\includes\config.php on line 59
+[20-Feb-2026 06:48:32 Europe/Berlin] PHP Warning:  mysqli::__construct(): (HY000/2002): No connection could be made because the target machine actively refused it in D:\xampp\htdocs\ux\Ux-Merchandise\includes\config.php on line 59
+[20-Feb-2026 07:03:07 Europe/Berlin] PHP Warning:  Attempt to read property "num_rows" on bool in D:\xampp\htdocs\ux\Ux-Merchandise\api\order\create.php on line 60
+[20-Feb-2026 07:03:07 Europe/Berlin] PHP Fatal error:  Uncaught Error: Call to a member function fetch_assoc() on bool in D:\xampp\htdocs\ux\Ux-Merchandise\api\order\create.php:64
+Stack trace:
+#0 {main}
+  thrown in D:\xampp\htdocs\ux\Ux-Merchandise\api\order\create.php on line 64
+[20-Feb-2026 07:09:37 Europe/Berlin] PHP Fatal error:  Maximum execution time of 120 seconds exceeded in D:\xampp\htdocs\ux\Ux-Merchandise\api\order\create.php on line 175
+[20-Feb-2026 07:09:37 Europe/Berlin] PHP Fatal error:  Maximum execution time of 120 seconds exceeded in D:\xampp\htdocs\ux\Ux-Merchandise\includes\config.php on line 53
+[20-Feb-2026 07:09:37 Europe/Berlin] PHP Fatal error:  Maximum execution time of 120 seconds exceeded in D:\xampp\htdocs\ux\Ux-Merchandise\includes\config.php on line 53
+[20-Feb-2026 07:09:37 Europe/Berlin] PHP Fatal error:  Maximum execution time of 120 seconds exceeded in D:\xampp\htdocs\ux\Ux-Merchandise\includes\config.php on line 53
+[20-Feb-2026 07:09:37 Europe/Berlin] PHP Fatal error:  Maximum execution time of 120 seconds exceeded in D:\xampp\htdocs\ux\Ux-Merchandise\includes\config.php on line 53
+[20-Feb-2026 07:09:37 Europe/Berlin] PHP Fatal error:  Maximum execution time of 120 seconds exceeded in D:\xampp\htdocs\ux\Ux-Merchandise\includes\config.php on line 53
+[20-Feb-2026 07:09:37 Europe/Berlin] PHP Fatal error:  Maximum execution time of 120 seconds exceeded in D:\xampp\htdocs\ux\Ux-Merchandise\includes\config.php on line 53
+[20-Feb-2026 07:09:37 Europe/Berlin] PHP Fatal error:  Maximum execution time of 120 seconds exceeded in D:\xampp\htdocs\ux\Ux-Merchandise\includes\config.php on line 53
+[20-Feb-2026 07:12:17 Europe/Berlin] PHP Warning:  mysqli::__construct(): (HY000/2002): No connection could be made because the target machine actively refused it in D:\xampp\htdocs\ux\Ux-Merchandise\includes\config.php on line 59
+[20-Feb-2026 07:15:54 Europe/Berlin] PHP Warning:  mysqli::__construct(): (HY000/2002): No connection could be made because the target machine actively refused it in D:\xampp\htdocs\ux\Ux-Merchandise\includes\config.php on line 59

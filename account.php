@@ -135,7 +135,7 @@
                   </svg>
                   <span>Orders</span>
                 </a>
-                <a href="#settings" class="account-nav-item" data-tab="settings">
+                <!-- <a href="#settings" class="account-nav-item" data-tab="settings">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <circle cx="12" cy="12" r="3"></circle>
                     <path
@@ -143,7 +143,7 @@
                     </path>
                   </svg>
                   <span>Settings</span>
-                </a>
+                </a> -->
               </nav>
             </aside>
 

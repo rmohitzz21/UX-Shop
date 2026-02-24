@@ -12,15 +12,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 // Authentication Check
-// Authentication Check
-if (
-    (!isset($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'admin') 
-    && !isset($_SESSION['admin_id'])
-) {
-    http_response_code(403);
-    echo json_encode(["status" => "error", "message" => "Unauthorized access"]);
-    exit;
-}
+requireAdmin();
 
 // CSRF Protection
 if (empty($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'] ?? '', $_POST['csrf_token'])) {
@@ -47,9 +39,19 @@ $created_at = date('Y-m-d H:i:s');
 $updated_at = date('Y-m-d H:i:s');      
 
 // Validation
-if (empty($name) || empty($category) || empty($price)) {
+if (empty($name) || empty($category) || !isset($price)) {
     http_response_code(400);
     echo json_encode(["status" => "error", "message" => "Name, category, and price are required"]);
+    exit;
+}
+if (!is_numeric($price) || floatval($price) < 0) {
+    http_response_code(400);
+    echo json_encode(["status" => "error", "message" => "Price must be a non-negative number"]);
+    exit;
+}
+if (!is_numeric($stock) || intval($stock) < 0) {
+    http_response_code(400);
+    echo json_encode(["status" => "error", "message" => "Stock must be a non-negative integer"]);
     exit;
 }
 
@@ -63,7 +65,7 @@ if (isset($_FILES['images']) && !empty($_FILES['images']['name'][0])) {
     
     // Create directory if it doesn't exist
     if (!file_exists($uploadDir)) {
-        if (!mkdir($uploadDir, 0777, true)) {
+        if (!mkdir($uploadDir, 0755, true)) {
             http_response_code(500);
             echo json_encode(["status" => "error", "message" => "Failed to create upload directory"]);
             exit;
@@ -71,22 +73,26 @@ if (isset($_FILES['images']) && !empty($_FILES['images']['name'][0])) {
     }
 
     $files = $_FILES['images'];
-    $allowedfileExtensions = array('jpg', 'gif', 'png', 'webp', 'jpeg');
+    $allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+    $allowedMimeTypes  = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
     $fileCount = count($files['name']);
 
     for ($i = 0; $i < $fileCount; $i++) {
         if ($files['error'][$i] === UPLOAD_ERR_OK) {
             $fileTmpPath = $files['tmp_name'][$i];
             $fileName = $files['name'][$i];
-            
-            // Get extension
-            $fileNameCmps = explode(".", $fileName);
-            $fileExtension = strtolower(end($fileNameCmps));
+
+            // Validate extension
+            $fileExtension = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+
+            // Validate MIME type via finfo (cannot be spoofed by extension)
+            $finfo    = new finfo(FILEINFO_MIME_TYPE);
+            $mimeType = $finfo->file($fileTmpPath);
 
             // Sanitize file name
-            $newFileName = md5(time() . $fileName . $i) . '.' . $fileExtension;
-            
-            if (in_array($fileExtension, $allowedfileExtensions)) {
+            $newFileName = bin2hex(random_bytes(16)) . '.' . $fileExtension;
+
+            if (in_array($fileExtension, $allowedExtensions) && in_array($mimeType, $allowedMimeTypes)) {
                 $dest_path = $uploadDir . $newFileName;
                 
                 if(move_uploaded_file($fileTmpPath, $dest_path)) {

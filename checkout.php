@@ -281,47 +281,12 @@
                       </label>
                     </div>
 
-                    <div id="card-details" class="card-details">
-                      <div class="form-field">
-                        <label for="card-number">Card Number *</label>
-                        <input
-                          id="card-number"
-                          name="cardNumber"
-                          type="text"
-                          placeholder="1234 5678 9012 3456"
-                          maxlength="19"
-                        />
-                      </div>
-                      <div class="form-row">
-                        <div class="form-field">
-                          <label for="expiry">Expiry Date *</label>
-                          <input
-                            id="expiry"
-                            name="expiry"
-                            type="text"
-                            placeholder="MM/YY"
-                            maxlength="5"
-                          />
-                        </div>
-                        <div class="form-field">
-                          <label for="cvv">CVV *</label>
-                          <input
-                            id="cvv"
-                            name="cvv"
-                            type="text"
-                            placeholder="123"
-                            maxlength="4"
-                          />
-                        </div>
-                      </div>
-                      <div class="form-field">
-                        <label for="card-name">Cardholder Name *</label>
-                        <input
-                          id="card-name"
-                          name="cardName"
-                          type="text"
-                        />
-                      </div>
+                    <!-- Card/UPI notice — payment gateway not yet integrated -->
+                    <div id="card-details" class="card-details" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:16px;margin-top:12px">
+                      <p style="margin:0;color:#aaa;font-size:0.9rem;">
+                        <strong style="color:#e94560">Payment gateway coming soon.</strong><br>
+                        Card and UPI payments will be processed via a secure payment gateway. For now, please select <strong>Cash on Delivery</strong> if available, or your order will be recorded as pending payment.
+                      </p>
                     </div>
                   </div>
 

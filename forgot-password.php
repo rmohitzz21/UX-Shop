@@ -1,9 +1,11 @@
+<?php require_once 'includes/config.php'; ?>
 <!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <title>Forgot Password – UX Pacific Shop</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="csrf-token" content="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>" />
     <link
       href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
       rel="stylesheet"
@@ -134,89 +136,13 @@
                 </button>
               </form>
 
-              <!-- Step 2: Code Verification (hidden initially) -->
-              <form class="auth-form" id="verify-code-form" onsubmit="handleVerifyCode(event)" style="display: none;">
-                <div id="verify-error" class="error-message" style="display: none;"></div>
-                
-                <p class="auth-subtitle" style="text-align: left; margin-bottom: 20px;">
-                  We've sent a verification code to your email. Please enter it below.
-                </p>
-
-                <div class="form-field">
-                  <label for="verification-code">Verification Code *</label>
-                  <input
-                    id="verification-code"
-                    name="code"
-                    type="text"
-                    placeholder="Enter 6-digit code"
-                    required
-                    maxlength="6"
-                    pattern="[0-9]{6}"
-                  />
-                  <span class="field-error"></span>
-                </div>
-
-                <div class="form-options">
-                  <a href="#" onclick="resendCode(); return false;" class="forgot-link">Resend Code</a>
-                </div>
-
-                <button type="submit" class="btn-primary auth-submit" id="verify-btn">
-                  <span id="verify-text">Verify Code</span>
-                  <span id="verify-loader" style="display:none;">Verifying...</span>
-                </button>
-              </form>
-
-              <!-- Step 3: New Password (hidden initially) -->
-              <form class="auth-form" id="new-password-form" onsubmit="handleNewPassword(event)" style="display: none;">
-                <div id="password-error" class="error-message" style="display: none;"></div>
-                
-                <p class="auth-subtitle" style="text-align: left; margin-bottom: 20px;">
-                  Create a new password for your account.
-                </p>
-
-                <div class="form-field">
-                  <label for="new-password">New Password *</label>
-                  <input
-                    id="new-password"
-                    name="newPassword"
-                    type="password"
-                    placeholder="Enter new password"
-                    required
-                    minlength="8"
-                    autocomplete="new-password"
-                  />
-                  <span class="field-hint">Must be at least 8 characters</span>
-                  <span class="field-error"></span>
-                </div>
-
-                <div class="form-field">
-                  <label for="confirm-new-password">Confirm New Password *</label>
-                  <input
-                    id="confirm-new-password"
-                    name="confirmNewPassword"
-                    type="password"
-                    placeholder="Confirm new password"
-                    required
-                    minlength="8"
-                    autocomplete="new-password"
-                  />
-                  <span class="field-error"></span>
-                </div>
-
-                <button type="submit" class="btn-primary auth-submit" id="save-password-btn">
-                  <span id="save-text">Save New Password</span>
-                  <span id="save-loader" style="display:none;">Saving...</span>
-                </button>
-              </form>
-
-              <!-- Success Message (hidden initially) -->
+              <!-- Success state (shown after email submission) -->
               <div id="reset-success" style="display: none;">
                 <div class="success-message" style="margin-bottom: 24px;">
-                  <strong>Password reset successful!</strong><br />
-                  You can now sign in with your new password.
+                  If that email is registered, a reset link has been sent. Please check your inbox.
                 </div>
                 <a href="signin.php" class="btn-primary" style="width: 100%; text-align: center; display: block;">
-                  Go to Sign In
+                  Back to Sign In
                 </a>
               </div>
 

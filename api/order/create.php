@@ -51,8 +51,8 @@ try {
             throw new Exception("Maximum 10 items per product allowed");
         }
 
-        // Fetch Product Data (Price, Stock, Type) from DB
-        $stmt = $conn->prepare("SELECT price, stock, available_type FROM products WHERE id = ? FOR UPDATE");
+        // Fetch Product Data (Price, Stock, Type, Name, Image) from DB
+        $stmt = $conn->prepare("SELECT price, stock, available_type, name, image FROM products WHERE id = ? FOR UPDATE");
         $stmt->bind_param("i", $product_id);
         $stmt->execute();
         $result = $stmt->get_result();
@@ -64,9 +64,11 @@ try {
         $product = $result->fetch_assoc();
         $stmt->close();
         
-        $price = floatval($product['price']);
+        $price         = floatval($product['price']);
         $current_stock = intval($product['stock']);
-        $type = $product['available_type']; // physical, digital, both
+        $type          = $product['available_type']; // physical, digital, both
+        $product_name  = $product['name'];
+        $product_image = $product['image'];
         
         // Digital Check
         // If product is strictly digital, flag it. 
@@ -100,13 +102,13 @@ try {
         $calculated_subtotal += $item_total;
         
         $order_items_data[] = [
-            'product_id' => $product_id,
-            'quantity' => $quantity,
-            'price' => $price, // Use DB price
-            'size' => $size,
-            'type' => $selected_type // Store the selected type if needed, or schema doesn't have it? 
-            // Schema order_items (order_id, product_id, quantity, price, size)
-            // We might lose 'type' info if not in schema. But standard schema implies physical unless product is digital.
+            'product_id'    => $product_id,
+            'quantity'      => $quantity,
+            'price'         => $price,         // Use DB price — never trust client
+            'size'          => $size,
+            'type'          => $selected_type,
+            'product_name'  => $product_name,  // Snapshot name
+            'product_image' => $product_image, // Snapshot image path
         ];
     }
     
@@ -165,19 +167,21 @@ try {
     $stmt->close();
 
     // 7. Insert Items & Remove from Cart
-    $stmt_item = $conn->prepare("INSERT INTO order_items (order_id, product_id, quantity, price, size) VALUES (?, ?, ?, ?, ?)");
+    $stmt_item = $conn->prepare("INSERT INTO order_items (order_id, product_id, quantity, price, size, product_name, product_image) VALUES (?, ?, ?, ?, ?, ?, ?)");
     
     // Check for size matching (handling empty/null)
     $delete_cart = $conn->prepare("DELETE FROM cart WHERE user_id = ? AND product_id = ? AND (size = ? OR size = '' OR size IS NULL) AND available_type = ?");
     
     foreach ($order_items_data as $item) {
         // Insert into order_items
-        $stmt_item->bind_param("iiids", 
-            $order_id, 
-            $item['product_id'], 
-            $item['quantity'], 
-            $item['price'], 
-            $item['size']
+        $stmt_item->bind_param("iiidsss",
+            $order_id,
+            $item['product_id'],
+            $item['quantity'],
+            $item['price'],
+            $item['size'],
+            $item['product_name'],
+            $item['product_image']
         );
         if (!$stmt_item->execute()) {
             throw new Exception("Error inserting order items");

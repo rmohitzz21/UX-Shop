@@ -346,7 +346,7 @@ if (empty($_SESSION['csrf_token'])) {
 
     <!-- Form Card -->
     <div class="form-card">
-      <form id="edit-product-form" onsubmit="handleUpdateProduct(event)">
+      <form id="edit-product-form">
         <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
         <input type="hidden" id="product-id" name="id">
 

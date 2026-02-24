@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(powershell -Command:*)",
+      "Bash(/d/xampp/php/php.exe tests/test_suite.php)",
+      "Bash(/d/xampp/mysql/bin/mysql.exe:*)",
+      "Bash(dir:*)",
+      "Bash(python3:*)",
+      "Bash(python:*)"
+    ]
+  }
+}

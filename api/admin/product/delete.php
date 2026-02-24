@@ -11,12 +11,8 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-// Authentication Check
-if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
-    http_response_code(403);
-    echo json_encode(["status" => "error", "message" => "Unauthorized access"]);
-    exit;
-}
+// Authentication Check — use canonical requireAdmin() which checks admin_id
+requireAdmin();
 
 
 $id = $_POST['id'] ?? null;

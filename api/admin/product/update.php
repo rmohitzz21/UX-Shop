@@ -11,15 +11,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 // Authentication Check
-// Authentication Check
-if (
-    (!isset($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'admin') 
-    && !isset($_SESSION['admin_id'])
-) {
-    http_response_code(403);
-    echo json_encode(["status" => "error", "message" => "Unauthorized access"]);
-    exit;
-}
+requireAdmin();
 
 // CSRF Protection
 if (empty($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'] ?? '', $_POST['csrf_token'])) {
@@ -58,22 +50,27 @@ $new_images = [];
 // 1. Process uploaded files
 if (isset($_FILES['images']) && !empty($_FILES['images']['name'][0])) {
     $uploadDir = '../../../img/products/';
-    if (!file_exists($uploadDir)) mkdir($uploadDir, 0777, true);
-    
-    $files = $_FILES['images'];
-    $allowedfileExtensions = array('jpg', 'gif', 'png', 'webp', 'jpeg');
-    $fileCount = count($files['name']);
-    
+    if (!file_exists($uploadDir)) mkdir($uploadDir, 0755, true);
+
+    $files             = $_FILES['images'];
+    $allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+    $allowedMimeTypes  = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    $fileCount         = count($files['name']);
+
     for ($i = 0; $i < $fileCount; $i++) {
         if ($files['error'][$i] === UPLOAD_ERR_OK) {
-            $fileName = $files['name'][$i];
-            $fileNameCmps = explode(".", $fileName);
-            $fileExtension = strtolower(end($fileNameCmps));
-            $newFileName = md5(time() . $fileName . $i) . '.' . $fileExtension;
-            
-            if (in_array($fileExtension, $allowedfileExtensions)) {
+            $fileTmpPath   = $files['tmp_name'][$i];
+            $fileName      = $files['name'][$i];
+            $fileExtension = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+            $newFileName   = bin2hex(random_bytes(16)) . '.' . $fileExtension;
+
+            // Validate MIME type via finfo
+            $finfo    = new finfo(FILEINFO_MIME_TYPE);
+            $mimeType = $finfo->file($fileTmpPath);
+
+            if (in_array($fileExtension, $allowedExtensions) && in_array($mimeType, $allowedMimeTypes)) {
                 $dest_path = $uploadDir . $newFileName;
-                if(move_uploaded_file($files['tmp_name'][$i], $dest_path)) {
+                if (move_uploaded_file($fileTmpPath, $dest_path)) {
                     $new_images[] = 'img/products/' . $newFileName;
                 }
             }

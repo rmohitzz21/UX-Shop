@@ -1137,22 +1137,22 @@ if (empty($_SESSION['csrf_token'])) {
             <div class="stat-card">
               <div class="stat-card-title">Total Users</div>
               <div class="stat-card-value" id="stat-total-users">0</div>
-              <div class="stat-card-change">+12% from last month</div>
+              <div class="stat-card-change" id="stat-users-change">—</div>
             </div>
             <div class="stat-card">
               <div class="stat-card-title">Total Products</div>
               <div class="stat-card-value" id="stat-total-products">0</div>
-              <div class="stat-card-change">+5 new products</div>
+              <div class="stat-card-change" id="stat-products-change">—</div>
             </div>
             <div class="stat-card">
               <div class="stat-card-title">Total Orders</div>
               <div class="stat-card-value" id="stat-total-orders">0</div>
-              <div class="stat-card-change">+23% from last month</div>
+              <div class="stat-card-change" id="stat-orders-change">—</div>
             </div>
             <div class="stat-card">
               <div class="stat-card-title">Total Revenue</div>
-               <div class="stat-card-value" id="stat-total-revenue">$0</div>
-              <div class="stat-card-change">+18% from last month</div>
+              <div class="stat-card-value" id="stat-total-revenue">$0</div>
+              <div class="stat-card-change" id="stat-revenue-change">—</div>
             </div>
           </div>
 

@@ -9,6 +9,11 @@ if (!$input) {
     sendResponse("error", "Invalid input", null, 400);
 }
 
+// CSRF validation
+if (empty($input['csrf_token']) || empty($_SESSION['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $input['csrf_token'])) {
+    sendResponse("error", "Invalid CSRF token", null, 403);
+}
+
 $email = $input['email'] ?? '';
 $password = $input['password'] ?? '';
 
@@ -44,10 +49,15 @@ if ($user) {
     if ($user['role'] !== 'admin') {
         $_SESSION['admin_login_attempts']++;
         $_SESSION['admin_last_attempt_time'] = time();
+        $stmt->close();
+        $conn->close();
         sendResponse("error", "Invalid admin credentials or access denied", null, 401);
     }
-    
+
     if (password_verify($password, $user['password_hash'])) {
+        $stmt->close();
+        $conn->close();
+
         // Regenerate session ID to prevent session fixation
         session_regenerate_id(true);
 
@@ -58,19 +68,18 @@ if ($user) {
         $_SESSION['admin_id'] = $user['id'];
         $_SESSION['admin_email'] = $user['email'];
         $_SESSION['role'] = $user['role'];
-        
+
         sendResponse("success", "Login successful", [
             "id" => $user['id'],
             "email" => $user['email'],
             "role" => $user['role']
         ]);
-        exit;
     }
 }
 
 $_SESSION['admin_login_attempts']++;
 $_SESSION['admin_last_attempt_time'] = time();
-sendResponse("error", "Invalid admin credentials or access denied", null, 401);
 $stmt->close();
 $conn->close();
+sendResponse("error", "Invalid admin credentials or access denied", null, 401);
 ?>

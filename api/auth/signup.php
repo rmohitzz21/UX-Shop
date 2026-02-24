@@ -10,6 +10,13 @@ if (!$input) {
     exit;
 }
 
+// CSRF validation
+if (empty($input['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $input['csrf_token'])) {
+    http_response_code(403);
+    echo json_encode(['status' => 'error', 'message' => 'Invalid CSRF token']);
+    exit;
+}
+
 $email = $input['email'] ?? '';
 $password = $input['password'] ?? '';
 $firstName = $input['firstName'] ?? '';

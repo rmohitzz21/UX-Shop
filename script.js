@@ -1,3 +1,14 @@
+// ── Security: HTML entity encoder — use on ALL user data injected via innerHTML ─
+function esc(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;');
+}
+
 // Mobile nav toggle with accessibility support
 const mobileBtn = document.getElementById("mobile-menu-btn");
 const mobileMenu = document.getElementById("mobile-menu");
@@ -189,21 +200,21 @@ function generateProductCardHTML(product) {
     const desc = (product.description || '');
 
     return `
-    <article class="product-card" data-category="${category}">
+    <article class="product-card" data-category="${esc(category)}">
       <div class="product-img">
-        <img src="${product.image}" alt="${product.name}" onerror="this.src='img/sticker.webp'" />
-        <span class="product-tag">${category}</span>
+        <img src="${esc(product.image)}" alt="${esc(product.name)}" onerror="this.src='img/sticker.webp'" />
+        <span class="product-tag">${esc(category)}</span>
       </div>
       <div class="product-body">
-        <h3>${product.name}</h3>
-        <p style="margin-bottom: 0.5rem; font-size: 0.95rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">${desc}</p>
+        <h3>${esc(product.name)}</h3>
+        <p style="margin-bottom: 0.5rem; font-size: 0.95rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">${esc(desc)}</p>
         <div class="product-meta">
           <div class="product-price">$${price.toLocaleString()} ${oldPrice ? `<span>$${oldPrice.toLocaleString()}</span>` : ''}</div>
-          <div class="product-rating">★ ${product.rating || '0.0'}</div>
+          <div class="product-rating">★ ${esc(product.rating || '0.0')}</div>
         </div>
         <div class="product-actions">
-          <button onclick="addToCart('${product.id}', null, 1, {name: '${safeName}', price: ${price}, image: '${safeImage}', category: '${safeCategory}'})" class="btn-primary small" aria-label="Add to cart" ${product.stock <= 0 ? 'disabled' : ''}>Add to Cart</button>
-          <a href="product.php?id=${product.id}" class="btn-ghost small">View Details</a>
+          <button onclick="addToCart('${esc(product.id)}', null, 1, {name: '${safeName}', price: ${price}, image: '${safeImage}', category: '${safeCategory}'})" class="btn-primary small" aria-label="Add to cart" ${product.stock <= 0 ? 'disabled' : ''}>Add to Cart</button>
+          <a href="product.php?id=${encodeURIComponent(product.id)}" class="btn-ghost small">View Details</a>
         </div>
       </div>
     </article>
@@ -858,24 +869,24 @@ async function loadCartPage() {
     return {
       html: `
         <div class="cart-item">
-          <img src="${image}" alt="${name}" class="cart-item-image" onerror="this.src='img/sticker.webp'" />
+          <img src="${esc(image)}" alt="${esc(name)}" class="cart-item-image" onerror="this.src='img/sticker.webp'" />
           <div class="cart-item-details">
-            <h3 class="cart-item-title">${name}</h3>
-            <p class="cart-item-desc" style="font-size: 0.85rem; color: #777; margin-bottom: 4px;">${description || ''}</p>
+            <h3 class="cart-item-title">${esc(name)}</h3>
+            <p class="cart-item-desc" style="font-size: 0.85rem; color: #777; margin-bottom: 4px;">${esc(description || '')}</p>
             <p class="cart-item-meta">
-              ${productType ? `Format: <span style="text-transform:capitalize">${productType}</span> • ` : ''}
-              ${item.size ? `Size: ${item.size} • ` : ''}
+              ${productType ? `Format: <span style="text-transform:capitalize">${esc(productType)}</span> • ` : ''}
+              ${item.size ? `Size: ${esc(item.size)} • ` : ''}
               Quantity: ${item.quantity}
             </p>
             <p class="cart-item-price">$${itemTotal.toLocaleString()}</p>
           </div>
           <div class="cart-item-actions">
             <div class="cart-item-qty">
-              <button onclick="updateCartQuantity('${item.id}', '${item.size || ''}', ${item.quantity - 1})">−</button>
+              <button onclick="updateCartQuantity('${esc(item.id)}', '${esc(item.size || '')}', ${item.quantity - 1})">−</button>
               <span>${item.quantity}</span>
-              <button onclick="updateCartQuantity('${item.id}', '${item.size || ''}', ${item.quantity + 1})">+</button>
+              <button onclick="updateCartQuantity('${esc(item.id)}', '${esc(item.size || '')}', ${item.quantity + 1})">+</button>
             </div>
-            <button class="remove-item" onclick="removeFromCart('${item.id}', '${item.size || ''}')">Remove</button>
+            <button class="remove-item" onclick="removeFromCart('${esc(item.id)}', '${esc(item.size || '')}')">Remove</button>
           </div>
         </div>
       `,
@@ -1025,12 +1036,12 @@ function loadCheckoutPage() {
   
   checkoutItemsContainer.innerHTML = cart.map(item => `
     <div class="checkout-item">
-      <img src="${item.image}" alt="${item.name}" class="checkout-item-image" onerror="this.src='img/sticker.webp'" />
+      <img src="${esc(item.image)}" alt="${esc(item.name)}" class="checkout-item-image" onerror="this.src='img/sticker.webp'" />
       <div class="checkout-item-info">
-        <div class="checkout-item-name">${item.name}</div>
+        <div class="checkout-item-name">${esc(item.name)}</div>
         <div class="checkout-item-details">
-          ${item.available_type ? `<span style="text-transform:capitalize">${item.available_type}</span> • ` : ''}
-          ${item.size ? `Size: ${item.size} • ` : ''}Qty: ${item.quantity}
+          ${item.available_type ? `<span style="text-transform:capitalize">${esc(item.available_type)}</span> • ` : ''}
+          ${item.size ? `Size: ${esc(item.size)} • ` : ''}Qty: ${item.quantity}
         </div>
       </div>
       <div class="checkout-item-price">$${(item.price * item.quantity).toLocaleString()}</div>
@@ -1540,7 +1551,7 @@ function handleSignIn(event) {
   btnLoader.style.display = 'inline';
   
   // Call API
-  const csrfToken = document.getElementById('csrf_token') ? document.getElementById('csrf_token').value : '';
+  const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || document.getElementById('csrf_token')?.value || '';
   fetch('api/auth/login.php', {
     method: 'POST',
     headers: {
@@ -1641,21 +1652,44 @@ function handleSignOut() {
 }
 
 // Contact form handler
-function handleContactSubmit(event) {
+async function handleContactSubmit(event) {
   event.preventDefault();
-  
+
   const form = event.target;
+  const submitBtn = form.querySelector('[type="submit"]');
   const formData = {
-    name: form.name.value,
-    email: form.email.value,
-    phone: form.phone.value,
-    subject: form.subject.value,
-    message: form.message.value
+    name:    form.name.value.trim(),
+    email:   form.email.value.trim(),
+    phone:   form.phone?.value.trim() || '',
+    subject: form.subject?.value.trim() || '',
+    message: form.message.value.trim()
   };
-  
-  // TODO: Replace with actual API call
-  showToast('Thank you! We will contact you soon.', 'success');
-  form.reset();
+
+  if (!formData.name || !formData.email || !formData.message) {
+    showToast('Please fill in all required fields.', 'error');
+    return;
+  }
+
+  if (submitBtn) submitBtn.disabled = true;
+
+  try {
+    const res = await fetch('api/contact/send.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(formData)
+    });
+    const data = await res.json();
+    if (data.status === 'success') {
+      showToast('Thank you! We will get back to you shortly.', 'success');
+      form.reset();
+    } else {
+      showToast(data.message || 'Failed to send message. Please try again.', 'error');
+    }
+  } catch (err) {
+    showToast('Network error. Please try again later.', 'error');
+  }
+
+  if (submitBtn) submitBtn.disabled = false;
 }
 
 // Checkout handler with enhanced validation
@@ -1943,10 +1977,10 @@ function loadOrderConfirmationPage() {
   if (itemsList && orderData.items && orderData.items.length > 0) {
     itemsList.innerHTML = orderData.items.map(item => `
       <div class="confirmation-item">
-        <img src="${item.image}" alt="${item.name}" class="item-image" />
+        <img src="${esc(item.image)}" alt="${esc(item.name)}" class="item-image" />
         <div class="item-info">
-          <h4>${item.name}</h4>
-          <p>${item.size ? `Size: ${item.size} • ` : ''}Quantity: ${item.quantity}</p>
+          <h4>${esc(item.name)}</h4>
+          <p>${item.size ? `Size: ${esc(item.size)} • ` : ''}Quantity: ${item.quantity}</p>
         </div>
         <div class="item-price">$${item.price * item.quantity}</div>
       </div>
@@ -1959,12 +1993,12 @@ function loadOrderConfirmationPage() {
   const shippingDiv = document.getElementById('shipping-address');
   if (shippingDiv && orderData.shipping) {
     shippingDiv.innerHTML = `
-      <p><strong>${orderData.shipping.firstName || ''} ${orderData.shipping.lastName || ''}</strong></p>
-      <p>${orderData.shipping.address || ''}</p>
-      <p>${orderData.shipping.city || ''}, ${orderData.shipping.state || ''} ${orderData.shipping.zip || ''}</p>
-      <p>${orderData.shipping.country || 'India'}</p>
-      ${orderData.shipping.phone ? `<p>Phone: ${orderData.shipping.phone}</p>` : ''}
-      ${orderData.shipping.email ? `<p>Email: ${orderData.shipping.email}</p>` : ''}
+      <p><strong>${esc(orderData.shipping.firstName || '')} ${esc(orderData.shipping.lastName || '')}</strong></p>
+      <p>${esc(orderData.shipping.address || '')}</p>
+      <p>${esc(orderData.shipping.city || '')}, ${esc(orderData.shipping.state || '')} ${esc(orderData.shipping.zip || '')}</p>
+      <p>${esc(orderData.shipping.country || 'India')}</p>
+      ${orderData.shipping.phone ? `<p>Phone: ${esc(orderData.shipping.phone)}</p>` : ''}
+      ${orderData.shipping.email ? `<p>Email: ${esc(orderData.shipping.email)}</p>` : ''}
     `;
   } else if (shippingDiv) {
     shippingDiv.innerHTML = '<p class="empty-message">Shipping address not available.</p>';
@@ -2164,7 +2198,8 @@ function handleSignUp(event) {
       fullName: form.fullName ? form.fullName.value.trim() : null,
       email: email,
       phone: phone,
-      password: password
+      password: password,
+      csrf_token: document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
     })
   })
   .then(response => response.json())
@@ -2203,120 +2238,55 @@ function handleSignUp(event) {
   });
 }
 
-// Forgot password handler - Step 1: Send reset link
-function handleForgotPassword(event) {
+// Forgot password handler — sends real reset-link email
+async function handleForgotPassword(event) {
   event.preventDefault();
-  
+
   const form = event.target;
-  const email = form.email.value;
+  const email = form.email.value.trim();
   const btn = document.getElementById('reset-btn');
   const btnText = document.getElementById('reset-text');
   const btnLoader = document.getElementById('reset-loader');
   const errorDiv = document.getElementById('auth-error');
   const successDiv = document.getElementById('auth-success');
-  
-  // Show loading
-  btn.disabled = true;
-  btnText.style.display = 'none';
-  btnLoader.style.display = 'inline';
-  errorDiv.style.display = 'none';
-  successDiv.style.display = 'none';
-  
-  // TODO: Replace with actual API call
-  setTimeout(() => {
-    successDiv.textContent = 'Reset link sent to your email! Please check your inbox.';
-    successDiv.style.display = 'block';
-    
-    // Show verification code form
-    form.style.display = 'none';
-    document.getElementById('verify-code-form').style.display = 'block';
-    
-    btn.disabled = false;
-    btnText.style.display = 'inline';
-    btnLoader.style.display = 'none';
-  }, 1500);
-}
 
-// Forgot password handler - Step 2: Verify code
-function handleVerifyCode(event) {
-  event.preventDefault();
-  
-  const form = event.target;
-  const code = form.code.value;
-  const btn = document.getElementById('verify-btn');
-  const btnText = document.getElementById('verify-text');
-  const btnLoader = document.getElementById('verify-loader');
-  const errorDiv = document.getElementById('verify-error');
-  
-  // Show loading
   btn.disabled = true;
   btnText.style.display = 'none';
   btnLoader.style.display = 'inline';
-  errorDiv.style.display = 'none';
-  
-  // TODO: Replace with actual API call
-  setTimeout(() => {
-    if (code.length === 6) {
-      // Show new password form
+  if (errorDiv) errorDiv.style.display = 'none';
+  if (successDiv) successDiv.style.display = 'none';
+
+  try {
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+    const res = await fetch('api/auth/forgot-password.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, csrf_token: csrfToken })
+    });
+    const data = await res.json();
+
+    if (data.status === 'success') {
+      if (successDiv) {
+        successDiv.textContent = data.message;
+        successDiv.style.display = 'block';
+      }
       form.style.display = 'none';
-      document.getElementById('new-password-form').style.display = 'block';
-      
-      btn.disabled = false;
-      btnText.style.display = 'inline';
-      btnLoader.style.display = 'none';
     } else {
-      errorDiv.textContent = 'Invalid verification code';
-      errorDiv.style.display = 'block';
-      btn.disabled = false;
-      btnText.style.display = 'inline';
-      btnLoader.style.display = 'none';
+      if (errorDiv) {
+        errorDiv.textContent = data.message || 'Something went wrong. Please try again.';
+        errorDiv.style.display = 'block';
+      }
     }
-  }, 1000);
-}
-
-// Forgot password handler - Step 3: Set new password
-function handleNewPassword(event) {
-  event.preventDefault();
-  
-  const form = event.target;
-  const newPassword = form.newPassword.value;
-  const confirmNewPassword = form.confirmNewPassword.value;
-  const btn = document.getElementById('save-password-btn');
-  const btnText = document.getElementById('save-text');
-  const btnLoader = document.getElementById('save-loader');
-  const errorDiv = document.getElementById('password-error');
-  
-  // Validation
-  if (newPassword !== confirmNewPassword) {
-    errorDiv.textContent = 'Passwords do not match';
-    errorDiv.style.display = 'block';
-    return;
+  } catch (err) {
+    if (errorDiv) {
+      errorDiv.textContent = 'Network error. Please try again.';
+      errorDiv.style.display = 'block';
+    }
   }
-  
-  if (newPassword.length < 8) {
-    errorDiv.textContent = 'Password must be at least 8 characters';
-    errorDiv.style.display = 'block';
-    return;
-  }
-  
-  // Show loading
-  btn.disabled = true;
-  btnText.style.display = 'none';
-  btnLoader.style.display = 'inline';
-  errorDiv.style.display = 'none';
-  
-  // TODO: Replace with actual API call
-  setTimeout(() => {
-    // Show success message
-    form.style.display = 'none';
-    document.getElementById('reset-success').style.display = 'block';
-  }, 1500);
-}
 
-// Resend verification code
-function resendCode() {
-  showToast('Verification code resent to your email!', 'success');
-  // TODO: Implement resend code API call
+  btn.disabled = false;
+  btnText.style.display = 'inline';
+  btnLoader.style.display = 'none';
 }
 
 // Social sign in
@@ -2338,9 +2308,6 @@ window.updateCartQuantity = updateCartQuantity;
 window.handleSignIn = handleSignIn;
 window.handleSignUp = handleSignUp;
 window.handleForgotPassword = handleForgotPassword;
-window.handleVerifyCode = handleVerifyCode;
-window.handleNewPassword = handleNewPassword;
-window.resendCode = resendCode;
 window.handleContactSubmit = handleContactSubmit;
 window.handleCheckout = handleCheckout;
 

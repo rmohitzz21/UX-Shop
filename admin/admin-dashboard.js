@@ -88,7 +88,7 @@ function setupTabNavigation() {
 async function loadOverview() {
   const users = await fetchUsers();
   const products = await fetchProducts();
-  
+
   // Fetch orders from API
   let orders = [];
   try {
@@ -97,18 +97,35 @@ async function loadOverview() {
   } catch (e) {
     console.error("Error fetching orders for overview:", e);
   }
-  
-  // Merge with localStorage orders for total count (if any)
-  const localOrders = getAllOrders();
-  const totalOrdersCount = Math.max(orders.length, localOrders.length);
-  
-  // Update stats
+
+  // Update stat values
   document.getElementById('stat-total-users').textContent = users.length;
   document.getElementById('stat-total-products').textContent = products.length;
-  document.getElementById('stat-total-orders').textContent = orders.length; // Priority to DB
-  
+  document.getElementById('stat-total-orders').textContent = orders.length;
+
   const totalRevenue = orders.reduce((sum, order) => sum + parseFloat(order.total || 0), 0);
   document.getElementById('stat-total-revenue').textContent = `$${totalRevenue.toLocaleString()}`;
+
+  // Fetch real period comparison from backend
+  try {
+    const statsRes  = await fetch('../api/admin/stats/overview.php');
+    const statsData = await statsRes.json();
+    if (statsData.status === 'success') {
+      const d = statsData.data;
+      const setChange = (id, text, isPositive) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.textContent = text;
+        el.style.color = isPositive ? '#22c55e' : (text.startsWith('-') ? '#ef4444' : '#aaa');
+      };
+      setChange('stat-users-change',    d.users.change,    d.users.change.startsWith('+'));
+      setChange('stat-products-change', d.products.change, d.products.change.startsWith('+'));
+      setChange('stat-orders-change',   d.orders.change,   d.orders.change.startsWith('+'));
+      setChange('stat-revenue-change',  d.revenue.change,  d.revenue.change.startsWith('+'));
+    }
+  } catch (e) {
+    console.error('Stats comparison error:', e);
+  }
   
   // Load recent orders
   const recentOrders = orders.slice(0, 5); // list.php already orders by DESC
@@ -353,7 +370,7 @@ async function loadOrders() {
               <div class="action-buttons">
                 <button class="btn-small btn-edit" onclick="viewOrder(${orderId})">View</button>
                 <button class="btn-small btn-edit" data-order-number="${safeOrderNumber}" data-order-status="${safeStatus}" data-customer-name="${safeCustomerName}" onclick="updateOrderStatusFromBtn(this)">Update</button>
-                <button class="btn-small btn-delete" onclick="deleteOrder(${orderId})">Delete</button>
+                <button class="btn-small btn-delete" data-order-id="${orderId}" onclick="deleteOrder(${orderId})">Delete</button>
               </div>
             </td>
           </tr>
@@ -369,7 +386,8 @@ async function loadOrders() {
 async function deleteOrder(orderId) {
   if (!confirm('Are you sure you want to delete this order? This action cannot be undone.')) return;
 
-  const btn = document.querySelector(`button[onclick="deleteOrder('${orderId}')"]`);
+  // Use data attribute selector (reliable) instead of innerHTML onclick selector
+  const btn = document.querySelector(`button[data-order-id="${CSS.escape(String(orderId))}"]`);
   let originalText = 'Delete';
   if (btn) {
     originalText = btn.innerText;

@@ -1,0 +1,71 @@
+# ── UX Pacific Merchandise — Apache hardening ──────────────────────────────
+
+# Disable directory listing everywhere
+Options -Indexes
+
+# ── Block direct browser access to sensitive directories ─────────────────────
+
+# Block /includes
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+
+  # Block /includes/** direct access
+  RewriteRule ^includes/ - [F,L]
+
+  # Block /migrations/** direct access
+  RewriteRule ^migrations/ - [F,L]
+
+  # Block /core/** direct access
+  RewriteRule ^core/ - [F,L]
+
+  # Block /logs/** direct access
+  RewriteRule ^logs/ - [F,L]
+</IfModule>
+
+# Block .env file
+<Files ".env">
+  Order Allow,Deny
+  Deny from all
+</Files>
+
+# Block .htaccess itself (belt-and-suspenders)
+<Files ".htaccess">
+  Order Allow,Deny
+  Deny from all
+</Files>
+
+# Block common backup/temp file extensions
+<FilesMatch "\.(bak|sql|log|sh|swp|orig)$">
+  Order Allow,Deny
+  Deny from all
+</FilesMatch>
+
+# ── Security headers (for servers that don't pass PHP headers through) ────────
+<IfModule mod_headers.c>
+  Header always set X-Frame-Options "SAMEORIGIN"
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set X-XSS-Protection "1; mode=block"
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+  # Remove PHP version exposure
+  Header unset X-Powered-By
+</IfModule>
+
+# ── Compression ───────────────────────────────────────────────────────────────
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/css text/javascript application/javascript application/json
+</IfModule>
+
+# ── Browser caching for static assets ────────────────────────────────────────
+<IfModule mod_expires.c>
+  ExpiresActive On
+  ExpiresByType image/webp            "access plus 30 days"
+  ExpiresByType image/png             "access plus 30 days"
+  ExpiresByType image/jpg             "access plus 30 days"
+  ExpiresByType image/jpeg            "access plus 30 days"
+  ExpiresByType image/gif             "access plus 30 days"
+  ExpiresByType image/svg+xml         "access plus 30 days"
+  ExpiresByType text/css              "access plus 7 days"
+  ExpiresByType application/javascript "access plus 7 days"
+  ExpiresByType text/javascript       "access plus 7 days"
+  ExpiresByType application/json      "access plus 0 seconds"
+</IfModule>

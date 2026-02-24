@@ -10,6 +10,7 @@ if (empty($_SESSION['csrf_token'])) {
     <meta charset="UTF-8" />
     <title>Admin Login – UX Pacific Shop</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="csrf-token" content="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>" />
     <link
       href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
       rel="stylesheet"
@@ -138,20 +139,17 @@ if (empty($_SESSION['csrf_token'])) {
         btnLoader.style.display = 'inline';
         
         // Call API
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
         fetch('../api/auth/admin-login.php', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password })
+          body: JSON.stringify({ email, password, csrf_token: csrfToken })
         })
-        .then(response => {
-           if (!response.ok) throw new Error('API Error');
-           return response.json();
-        })
+        .then(response => response.json())
         .then(data => {
           if (data.status === 'success') {
             successDiv.textContent = 'Login successful! Redirecting...';
             successDiv.style.display = 'block';
-            
             setTimeout(() => {
               window.location.href = 'admin-dashboard.php';
             }, 1000);
@@ -165,7 +163,7 @@ if (empty($_SESSION['csrf_token'])) {
         })
         .catch(err => {
           console.error('Login error:', err);
-          errorDiv.textContent = 'Connection error. Please try again';
+          errorDiv.textContent = 'Server error. Please try again.';
           errorDiv.style.display = 'block';
           btn.disabled = false;
           btnText.style.display = 'inline';

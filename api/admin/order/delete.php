@@ -2,12 +2,8 @@
 header('Content-Type: application/json');
 require_once '../../../includes/config.php';
 
-// Check if user is logged in as admin
-if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
-    http_response_code(403);
-    echo json_encode(['status' => 'error', 'message' => 'Unauthorized access']);
-    exit;
-}
+// Authentication Check — use canonical requireAdmin() which checks admin_id
+requireAdmin();
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
