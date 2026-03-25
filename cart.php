@@ -7,6 +7,7 @@
     <meta name="description" content="View and manage your shopping cart at UX Pacific Shop. Review items, quantities, and proceed to secure checkout." />
     <meta name="keywords" content="shopping cart, checkout, UX Pacific, design resources, merchandise" />
     <meta name="robots" content="noindex, nofollow" />
+    <meta name="csrf-token" content="<?php echo htmlspecialchars($_SESSION['csrf_token'] ?? ''); ?>" />
     <title>Shopping Cart – UX Pacific Shop</title>
     <link
       href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
@@ -148,7 +149,7 @@
                     <img src="img/cart-icon.webp" alt="Empty Cart" />
                     <h2>Your cart is empty</h2>
                     <p>Looks like you haven't added anything to your cart yet.</p>
-                    <a href="shopAll.php" class="btn-primary" style="width: auto;">Continue Shopping</a>
+                    <a href="shopAll.php" class="btn-primary">Continue Shopping</a>
                 </div>
               </div>
 
@@ -177,10 +178,10 @@
                     </div>
                   </div>
 
-                  <a href="checkout.php" class="btn-primary checkout-btn" id="checkout-btn" style="display: none;height: auto;" onclick="return checkAuthBeforeCheckout(event);">
+                  <a href="checkout.php" class="btn-primary checkout-btn" id="checkout-btn" style="display: none;" onclick="return checkAuthBeforeCheckout(event);">
                     Proceed to Checkout
                   </a>
-                  <a href="shopAll.php"  class="btn-ghost continue-shopping"style="height: auto;">
+                  <a href="shopAll.php" class="btn-ghost continue-shopping">
                     Continue Shopping
                   </a>
 

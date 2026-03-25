@@ -20,6 +20,9 @@ Options -Indexes
 
   # Block /logs/** direct access
   RewriteRule ^logs/ - [F,L]
+
+  # Block /tests/** direct access
+  RewriteRule ^tests(/|$) - [F,L]
 </IfModule>
 
 # Block .env file

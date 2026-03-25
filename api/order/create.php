@@ -2,33 +2,27 @@
 header('Content-Type: application/json');
 
 require_once '../../includes/config.php';
+require_once '../../includes/helpers.php';
+
+requireUserAuth();
+validateCsrf();
 
 // Get raw POST data
 $data = json_decode(file_get_contents("php://input"), true);
 
 if (!$data) {
-    http_response_code(400);
-    echo json_encode(["status" => "error", "message" => "Invalid JSON data"]);
-    exit;
+    sendResponse('error', 'Invalid JSON data', null, 400);
 }
 
 // 1. Validate required fields
 $required_fields = ['items', 'paymentMethod', 'shipping'];
 foreach ($required_fields as $field) {
     if (!isset($data[$field])) {
-        http_response_code(400);
-        echo json_encode(["status" => "error", "message" => "Missing field: $field"]);
-        exit;
+        sendResponse('error', "Missing field: $field", null, 400);
     }
 }
 
-// 2. Validate User Session (Source of Truth)
-if (!isset($_SESSION['user_id'])) {
-    http_response_code(401);
-    echo json_encode(["status" => "error", "message" => "User not logged in"]);
-    exit;
-}
-$user_id = $_SESSION['user_id'];
+$user_id = (int) $_SESSION['user_id'];
 
 // 3. Initiate Calculation & Validation
 $calculated_subtotal = 0;
@@ -143,7 +137,8 @@ try {
 
     // 6. Create Order
     $order_number = 'UXP-' . date('Y') . '-' . str_pad(mt_rand(1, 999999), 6, '0', STR_PAD_LEFT);
-    $status = 'Pending';
+    // COD → 'Pending'; card/UPI → 'awaiting_payment' (confirmed after Razorpay verify)
+    $status = ($payment_method === 'cod') ? 'Pending' : 'awaiting_payment';
     $shipping_address_json = json_encode($data['shipping']);
     
     $stmt = $conn->prepare("INSERT INTO orders (order_number, user_id, total, subtotal, shipping, tax, payment_method, status, shipping_address, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())");
@@ -228,21 +223,19 @@ try {
     
     $conn->commit();
     
-    echo json_encode([
-        "status" => "success",
-        "message" => "Order placed successfully",
-        "orderNumber" => $order_number,
-        "orderId" => $order_id,
-        "total" => $calculated_total,
-        "subtotal" => $calculated_subtotal,
-        "tax" => $tax,
-        "shipping_cost" => $shipping_cost,
+    sendResponse('success', 'Order placed successfully', [
+        'orderNumber'   => $order_number,
+        'orderId'       => $order_id,
+        'total'         => $calculated_total,
+        'subtotal'      => $calculated_subtotal,
+        'tax'           => $tax,
+        'shipping_cost' => $shipping_cost,
+        'status'        => $status,
     ]);
     
 } catch (Exception $e) {
     $conn->rollback();
-    http_response_code(500);
-    echo json_encode(["status" => "error", "message" => $e->getMessage()]);
+    sendResponse('error', $e->getMessage(), null, 500);
 }
 
 $conn->close();

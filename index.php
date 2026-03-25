@@ -16,6 +16,7 @@
   <meta property="og:url" content="https://uxpacific.com/" />
   <meta property="og:image" content="https://uxpacific.com/img/LOGO.webp" />
   <meta name="twitter:card" content="summary_large_image" />
+  <meta name="csrf-token" content="<?php echo htmlspecialchars($_SESSION['csrf_token'] ?? ''); ?>" />
   <title>UX Pacific – Merchandise</title>
   <!-- Google Font -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
@@ -37,7 +38,7 @@
         <div class="nav-logo">
           <!-- replace with your logo -->
           <a href="index.php">
-            <img src="img/LOGO.webp" alt="UX Pacific" />
+            <img src="img/3.png" alt="UX Pacific" />
           </a>
         </div>
 

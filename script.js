@@ -1,3 +1,49 @@
+// ── CSRF helpers ─────────────────────────────────────────────────────────────
+// In-memory cache — populated from meta tag on first use, or fetched from API
+// if the meta tag is absent (pages that haven't had the tag added yet).
+let _csrfToken = null;
+let _csrfFetchPromise = null;
+
+/** Synchronous read — returns cached token or meta-tag value, never fetches. */
+function getCsrfToken() {
+  if (_csrfToken) return _csrfToken;
+  const meta = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+  if (meta) _csrfToken = meta;
+  return _csrfToken || '';
+}
+
+/** Async read — resolves with a valid token, fetching from /api/auth/csrf.php if needed. */
+async function getCsrfTokenAsync() {
+  if (_csrfToken) return _csrfToken;
+  const meta = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+  if (meta) { _csrfToken = meta; return _csrfToken; }
+  // Deduplicate concurrent calls — only one inflight request at a time
+  if (!_csrfFetchPromise) {
+    _csrfFetchPromise = fetch('api/auth/csrf.php')
+      .then(r => r.json())
+      .then(d => { _csrfToken = d.token || ''; _csrfFetchPromise = null; return _csrfToken; })
+      .catch(() => { _csrfFetchPromise = null; return ''; });
+  }
+  return _csrfFetchPromise;
+}
+
+/**
+ * secureFetch — drop-in replacement for fetch() that automatically injects
+ * the X-CSRF-Token header on every request.
+ * Usage: secureFetch('api/cart/add.php', { method:'POST', body: JSON.stringify(data) })
+ */
+async function secureFetch(url, options = {}) {
+  const token = await getCsrfTokenAsync();
+  return fetch(url, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRF-Token': token,
+      ...(options.headers || {}),
+    },
+  });
+}
+
 // ── Security: HTML entity encoder — use on ALL user data injected via innerHTML ─
 function esc(str) {
   if (str === null || str === undefined) return '';
@@ -625,7 +671,7 @@ function addToCart(productId, size = null, quantity = 1, explicitDetails = null,
   
         fetch('api/cart/add.php', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCsrfToken() },
             body: JSON.stringify(payload)
         })
         .then(res => res.json())
@@ -702,7 +748,7 @@ function removeFromCart(productId, size = null) {
       // LOGGED IN: API
       fetch('api/cart/remove.php', {
           method: 'POST',
-          headers: {'Content-Type': 'application/json'},
+          headers: {'Content-Type': 'application/json', 'X-CSRF-Token': getCsrfToken()},
           body: JSON.stringify({
               product_id: productId,
               size: size,
@@ -758,7 +804,7 @@ function updateCartQuantity(productId, size, newQuantity) {
      // LOGGED IN: API
      fetch('api/cart/update.php', {
          method: 'POST',
-         headers: {'Content-Type': 'application/json'},
+         headers: {'Content-Type': 'application/json', 'X-CSRF-Token': getCsrfToken()},
          body: JSON.stringify({
              product_id: productId,
              quantity: newQuantity,
@@ -1551,7 +1597,7 @@ function handleSignIn(event) {
   btnLoader.style.display = 'inline';
   
   // Call API
-  const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || document.getElementById('csrf_token')?.value || '';
+  const csrfToken = getCsrfToken();
   fetch('api/auth/login.php', {
     method: 'POST',
     headers: {
@@ -1588,7 +1634,7 @@ function handleSignIn(event) {
       if (localCart.length > 0) {
           fetch('api/cart/merge.php', {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
+              headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCsrfToken() },
               body: JSON.stringify({ cart: localCart })
           })
           .then(res => res.json())
@@ -1675,7 +1721,7 @@ async function handleContactSubmit(event) {
   try {
     const res = await fetch('api/contact/send.php', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCsrfToken() },
       body: JSON.stringify(formData)
     });
     const data = await res.json();
@@ -1785,34 +1831,7 @@ function handleCheckout(event) {
     } else if (form.zip) clearFieldError(form.zip);
   }
   
-  // Payment method validation
-  if (paymentMethod === 'card') {
-    const cardNumber = form.cardNumber?.value.replace(/\s/g, '');
-    const expiry = form.expiry?.value;
-    const cvv = form.cvv?.value;
-    const cardName = form.cardName?.value.trim();
-    
-    if (!cardNumber || cardNumber.length < 13) {
-      if (form.cardNumber) showFieldError(form.cardNumber, 'Please enter a valid card number');
-      isValid = false;
-    } else if (form.cardNumber) clearFieldError(form.cardNumber);
-    
-    if (!expiry || !/^\d{2}\/\d{2}$/.test(expiry)) {
-      if (form.expiry) showFieldError(form.expiry, 'Please enter a valid expiry date (MM/YY)');
-      isValid = false;
-    } else if (form.expiry) clearFieldError(form.expiry);
-    
-    if (!cvv || cvv.length < 3) {
-      if (form.cvv) showFieldError(form.cvv, 'Please enter a valid CVV');
-      isValid = false;
-    } else if (form.cvv) clearFieldError(form.cvv);
-    
-    if (!cardName || cardName.length < 2) {
-      if (form.cardName) showFieldError(form.cardName, 'Cardholder name is required');
-      isValid = false;
-    } else if (form.cardName) clearFieldError(form.cardName);
-  }
-  
+  // Card/UPI payment is handled by Razorpay modal — no client-side card field validation needed
   if (!isValid) {
     showToast('Please fill in all required fields correctly', 'error');
     return;
@@ -1862,67 +1881,144 @@ function handleCheckout(event) {
     }
   };
   
-  fetch('api/order/create.php', {
+  const csrfToken = getCsrfToken();
+  const orderHeaders = { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken };
+
+  function resetOrderBtn() {
+    btn.disabled = false;
+    btnText.style.display = 'inline';
+    btnLoader.style.display = 'none';
+  }
+
+  function handleOrderSuccess(orderData, serverData) {
+    showToast('Order placed successfully!', 'success');
+    cart = [];
+    saveCart();
+    updateCartCount();
+    const confirmationData = {
+      ...orderData,
+      orderNumber: serverData.data.orderNumber,
+      orderId:     serverData.data.orderId,
+      date:        new Date().toISOString(),
+      status:      'Confirmed',
+      total:        serverData.data.total        ?? orderData.total,
+      subtotal:     serverData.data.subtotal     ?? orderData.subtotal,
+      tax:          serverData.data.tax          ?? orderData.tax,
+      shipping_cost: serverData.data.shipping_cost ?? orderData.shipping_cost,
+    };
+    localStorage.setItem('lastOrder', JSON.stringify(confirmationData));
+    setTimeout(() => { window.location.href = 'order-confirmation.php'; }, 1000);
+  }
+
+  function createDraftOrder() {
+    return fetch('api/order/create.php', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: orderHeaders,
       body: JSON.stringify(orderPayload)
-  })
-  .then(response => {
-      if (response.status === 401) {
-          clearUserSession();
-          showToast('Session expired. Please sign in again.', 'error');
-          setTimeout(() => {
-            window.location.href = 'signin.php?redirect=checkout.php';
-          }, 1500);
-          throw new Error('Session expired');
+    }).then(res => {
+      if (res.status === 401) {
+        clearUserSession();
+        showToast('Session expired. Please sign in again.', 'error');
+        setTimeout(() => { window.location.href = 'signin.php?redirect=checkout.php'; }, 1500);
+        throw new Error('Session expired');
       }
-      return response.json();
-  })
-  .then(data => {
-      if (data.status === 'success') {
-          // Success
-          showToast('Order placed successfully!', 'success');
-          
-          // Clear Cart
-          cart = [];
-          saveCart();
-          updateCartCount();
-          
-          // Cart clearing is handled by api/order/create.php
-          
-          // Save order details for confirmation page
-          const confirmationData = {
-              ...orderPayload,
-              orderNumber: data.orderNumber,
-              orderId: data.orderId,
-              date: new Date().toISOString(),
-              status: 'Pending',
-              // Use server values if provided (Source of Truth)
-              total: data.total !== undefined ? data.total : orderPayload.total,
-              subtotal: data.subtotal !== undefined ? data.subtotal : orderPayload.subtotal,
-              tax: data.tax !== undefined ? data.tax : orderPayload.tax,
-              shipping_cost: data.shipping_cost !== undefined ? data.shipping_cost : orderPayload.shipping_cost
-          };
-          localStorage.setItem('lastOrder', JSON.stringify(confirmationData));
-          
-          // Redirect
-          setTimeout(() => {
-              window.location.href = 'order-confirmation.php';
-          }, 1000);
-          
-      } else {
-          throw new Error(data.message || 'Order failed');
-      }
-  })
-  .catch(error => {
-      console.error('Order error:', error);
-      showToast('Failed to place order: ' + error.message, 'error');
-      
-      // Reset button
-      btn.disabled = false;
-      btnText.style.display = 'inline';
-      btnLoader.style.display = 'none';
-  });
+      return res.json();
+    }).then(data => {
+      if (data.status !== 'success') throw new Error(data.message || 'Order creation failed');
+      return data;
+    });
+  }
+
+  function loadRazorpaySDK() {
+    return new Promise((resolve, reject) => {
+      if (window.Razorpay) { resolve(); return; }
+      const script = document.createElement('script');
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      script.onload  = resolve;
+      script.onerror = () => reject(new Error('Failed to load payment gateway'));
+      document.head.appendChild(script);
+    });
+  }
+
+  // ── COD flow ──────────────────────────────────────────────────────────────
+  if (paymentMethod === 'cod') {
+    createDraftOrder()
+      .then(data => handleOrderSuccess(orderPayload, data))
+      .catch(err => {
+        console.error('Order error:', err);
+        showToast('Failed to place order: ' + err.message, 'error');
+        resetOrderBtn();
+      });
+    return;
+  }
+
+  // ── Razorpay flow (card / upi) ────────────────────────────────────────────
+  createDraftOrder()
+    .then(orderData => {
+      // Create Razorpay order
+      return fetch('api/payment/razorpay-create-order.php', {
+        method: 'POST',
+        headers: orderHeaders,
+        body: JSON.stringify({ amount: orderData.data.total, currency: 'INR' })
+      })
+      .then(res => res.json())
+      .then(rzpData => {
+        if (rzpData.status !== 'success') throw new Error(rzpData.message || 'Payment gateway error');
+        return { orderData, rzpData };
+      });
+    })
+    .then(({ orderData, rzpData }) => loadRazorpaySDK().then(() => ({ orderData, rzpData })))
+    .then(({ orderData, rzpData }) => {
+      return new Promise((resolve, reject) => {
+        const shipping = orderPayload.shipping || {};
+        const options = {
+          key:         rzpData.data.key_id,
+          amount:      rzpData.data.amount_in_paise,
+          currency:    rzpData.data.currency,
+          order_id:    rzpData.data.razorpay_order_id,
+          name:        'UX Pacific Shop',
+          description: 'Order ' + orderData.data.orderNumber,
+          prefill: {
+            name:    (shipping.firstName || '') + ' ' + (shipping.lastName || ''),
+            email:   shipping.email  || '',
+            contact: shipping.phone  || '',
+          },
+          theme: { color: '#6f4bff' },
+          modal: {
+            ondismiss: () => reject(new Error('Payment cancelled')),
+          },
+          handler: (response) => {
+            // Verify payment server-side
+            fetch('api/payment/razorpay-verify.php', {
+              method: 'POST',
+              headers: orderHeaders,
+              body: JSON.stringify({
+                razorpay_order_id:   response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature:  response.razorpay_signature,
+                order_id:            orderData.data.orderId,
+              })
+            })
+            .then(res => res.json())
+            .then(verifyData => {
+              if (verifyData.status !== 'success') throw new Error(verifyData.message || 'Verification failed');
+              resolve({ orderData, verifyData });
+            })
+            .catch(reject);
+          },
+        };
+        new window.Razorpay(options).open();
+      });
+    })
+    .then(({ orderData }) => handleOrderSuccess(orderPayload, orderData))
+    .catch(err => {
+      console.error('Payment error:', err);
+      const msg = err.message === 'Payment cancelled'
+        ? 'Payment was cancelled.'
+        : 'Payment failed: ' + err.message;
+      showToast(msg, 'error');
+      resetOrderBtn();
+    });
 }
 
 // Load order confirmation page with order details
@@ -2199,7 +2295,7 @@ function handleSignUp(event) {
       email: email,
       phone: phone,
       password: password,
-      csrf_token: document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+      csrf_token: getCsrfToken()
     })
   })
   .then(response => response.json())
@@ -2257,7 +2353,7 @@ async function handleForgotPassword(event) {
   if (successDiv) successDiv.style.display = 'none';
 
   try {
-    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+    const csrfToken = getCsrfToken();
     const res = await fetch('api/auth/forgot-password.php', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

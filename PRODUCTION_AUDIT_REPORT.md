@@ -1,26 +1,45 @@
 # PRODUCTION AUDIT REPORT
 ## UX Pacific Merchandise — Full-Stack Production Readiness Review
 
-**Date:** 2026-02-19
+**Date:** 2026-03-25 *(updated from 2026-02-19)*
 **Auditor:** Claude Code (Automated + Static Analysis)
-**Branch:** `main` @ `e838453`
+**Branch:** `main` @ `d126b96`
 **Stack:** PHP 8.2.12 · MariaDB 10.4.32 · Apache 2.4 · XAMPP / Windows 11
+
+---
+
+## CHANGES SINCE LAST AUDIT (2026-02-19 → 2026-03-25)
+
+| Item | Was | Now |
+|---|---|---|
+| `search.php` | Empty shell | ✅ Functional — search with category/price/sort filters |
+| `wishlist.php` | Empty shell | ✅ Functional — localStorage wishlist with add-to-cart |
+| `api/order/get.php` LEFT JOIN | INNER JOIN (broke deleted products) | ✅ LEFT JOIN |
+| Product card image | Fixed 160px height (cropped) | ✅ `aspect-ratio: 1/1`, `object-fit: cover` |
+| Product card hover | None | ✅ Lift + purple glow |
+| Product page CTAs | Two identical gradient buttons | ✅ `btn-primary` (Buy Now) + `btn-ghost` (Add to Cart) |
+| `btn-primary` base | `width: 120px; height: 35px` hardcoded | ✅ Removed — uses padding, `width: fit-content` |
+| `signin.php` / `signup.php` button | Blue-purple gradient `#667eea`, `border-radius: 12px` | ✅ Site accent `#6f4bff`, `border-radius: 999px` |
+| `cart.php` inline styles | `style="height:auto; width:auto"` hacks | ✅ Removed |
+| `account.php` Add Address | `style="width:180px; height:41px"` | ✅ Removed |
+| `forgot-password.php` success btn | Inline styles | ✅ Replaced with `.auth-submit` class |
+| `reset-password.php` success btn | Inline styles | ✅ Replaced with `.auth-submit` class |
 
 ---
 
 ## FINAL VERDICT
 
 > **NOT READY FOR PRODUCTION**
-> Score: **61 / 100**
+> Score: **65 / 100** *(was 61/100)*
 
-| Category | Score |
-|---|---|
-| Security | 48 / 100 |
-| Functionality | 60 / 100 |
-| Code Quality | 68 / 100 |
-| Database | 65 / 100 |
-| Performance | 55 / 100 |
-| Test Coverage | 78 / 100 |
+| Category | Score | Change |
+|---|---|---|
+| Security | 48 / 100 | → no change |
+| Functionality | 70 / 100 | ↑ +10 (search + wishlist fixed) |
+| Code Quality | 72 / 100 | ↑ +4 (UI/CTA consistency, inline style cleanup) |
+| Database | 65 / 100 | → no change |
+| Performance | 58 / 100 | ↑ +3 (LEFT JOIN fixed) |
+| Test Coverage | 78 / 100 | → no change |
 
 ---
 
@@ -58,25 +77,17 @@
 
 ### Database
 
-| Table | Rows | AUTO_INCREMENT |
-|---|---|---|
-| users | 5 | 48 |
-| products | 2 | 37 |
-| orders | 3 | 82 |
-| order_items | ~3 | 81 |
-| cart | ~0 | 179 |
-| addresses | ~3 | 6 |
-| user_tokens | ~2 | 13 |
-| contact_messages | 1 | 2 |
-| password_reset_tokens | 0 | 1 |
+| Table | Notes |
+|---|---|
+| users | 5 rows (2 admin, 3 customer) |
+| products | 2 rows (1 live digital, 1 test physical) |
+| orders | 3 rows, all Pending |
+| order_items | ~3 rows |
+| cart | ~0 rows (high AUTO_INCREMENT from dev churn) |
+| addresses | ~3 rows |
+| password_reset_tokens | 0 rows |
 
-**Note:** High AUTO_INCREMENT vs row count disparity on `cart` (179/~0), `orders` (82/3), `users` (48/5) indicates extensive dev/test churn with row deletions. Orphaned test data present.
-
-### Current Data State
-
-- **Users:** 5 total (2 admin, 3 customer) — includes test account `ts_admin@test.uxpacific.local`
-- **Products:** 2 (1 digital "Webiste Template" [sic], 1 test physical "TS_Product_setup")
-- **Orders:** 3 all in Pending status
+**Note:** High AUTO_INCREMENT vs row count disparity on `cart` (179/~0), `orders` (82/3), `users` (48/5) indicates extensive dev/test churn. Test data still present.
 
 ---
 
@@ -90,8 +101,6 @@
 RESULTS: 29 passed  /  0 failed  /  2 skipped
 ```
 
-### Passed Tests (29)
-
 | Group | Tests |
 |---|---|
 | User Auth | Signup, Login, Session check, Logout |
@@ -103,18 +112,7 @@ RESULTS: 29 passed  /  0 failed  /  2 skipped
 | Admin Users | List users, Block/unblock user |
 | Security | CSRF validation, SQL injection attempt, XSS payload handling, Malicious file upload rejection, Directory traversal attempt |
 
-### Skipped Tests (2)
-
-- `50 concurrent GET /api/product/list.php` — `curl_multi_cleanup` not available in XAMPP PHP CLI
-- `Response times: min/avg/p95/max` — same reason
-
-### Issues Fixed Before This Run
-
-- Hardcoded `TEST_PRODUCT_ID=17` replaced with dynamic DB lookup in `setUp()`
-- `{$RST}` constant interpolation bug fixed (constants cannot be interpolated in strings)
-- Admin product HTTP 201 vs 200 mismatch fixed (`in_array($code, [200, 201])`)
-- `curl_multi_cleanup` guard corrected to check both `curl_multi_init` AND `curl_multi_cleanup`
-- `setUp()` now auto-creates a test product if no suitable physical product exists
+**Skipped (2):** `curl_multi_cleanup` not available in XAMPP PHP CLI — concurrent load tests could not run.
 
 ---
 
@@ -131,9 +129,9 @@ SMTP_PASS=FTkyPOScWAUm46zV
 SMTP_USER=admin@surveypacific.com
 ```
 
-The `.env` file is blocked by `.htaccess` via HTTP, but it is committed to git history and readable by any process with filesystem access to the XAMPP webroot. Real Brevo/Sendinblue SMTP credentials are present.
+The `.env` file is blocked by `.htaccess` via HTTP, but it is committed to git history. Real Brevo SMTP credentials are present and must be considered compromised.
 
-**Fix:** Rotate credentials immediately. Move secrets to system environment variables outside the webroot. Add `.env` to `.gitignore` and purge from git history (`git filter-branch` or BFG Repo Cleaner).
+**Fix:** Rotate credentials immediately. Move secrets to system environment variables outside the webroot. Add `.env` to `.gitignore` and purge from git history (BFG Repo Cleaner).
 
 ---
 
@@ -146,44 +144,40 @@ DB_USER=root
 DB_PASS=
 ```
 
-The application connects to MariaDB as `root` with an empty password. Any compromised web shell or SQL injection exploit would have full database admin privileges (DROP DATABASE, FILE read/write, user creation, etc.).
+Any compromised web shell or SQL injection exploit would have full database admin privileges.
 
-**Fix:** Create a dedicated application DB user:
-
+**Fix:**
 ```sql
 CREATE USER 'ux_app'@'localhost' IDENTIFIED BY '<strong-random-password>';
 GRANT SELECT, INSERT, UPDATE, DELETE ON uxmerchandise.* TO 'ux_app'@'localhost';
 FLUSH PRIVILEGES;
 ```
 
-Update `.env`: `DB_USER=ux_app` / `DB_PASS=<strong-random-password>`
-
 ---
 
-#### SEC-03 — Stored XSS in Admin Dashboard (Category Field)
+#### SEC-03 — Stored XSS in Admin Dashboard (Category Field) `STILL PRESENT`
 
 **File:** `admin/admin-dashboard.js:281`
 
 ```javascript
 // category rendered without escapeHtml():
-<td>${category}</td>
+const categoryBadge = `<span class="badge badge-info">${category}</span>`;
 ```
 
-The `escapeHtml()` function exists and is used correctly for other fields, but the `category` field is rendered raw. A product created via the API with a malicious category value (e.g. `<img src=x onerror=alert(document.cookie)>`) would execute in every admin's dashboard session.
+The `escapeHtml()` function exists and is used for other fields but not `category`. A product with a malicious category value executes in every admin's session.
 
 **Fix:**
-
 ```javascript
-<td>${escapeHtml(category)}</td>
+const categoryBadge = `<span class="badge badge-info">${escapeHtml(category)}</span>`;
 ```
 
 ---
 
 ### HIGH
 
-#### SEC-04 — CSRF Missing on Multiple State-Changing Endpoints
+#### SEC-04 — CSRF Missing on Multiple State-Changing Endpoints `STILL PRESENT`
 
-The following endpoints accept POST requests without validating a CSRF token:
+The following endpoints accept POST requests without CSRF token validation:
 
 - `api/cart/add.php`
 - `api/cart/remove.php`
@@ -193,27 +187,23 @@ The following endpoints accept POST requests without validating a CSRF token:
 - `api/address/add.php`
 - `api/address/delete.php`
 - `api/contact/send.php`
-- `api/auth/signup.php` (partial)
 
 **Fix:** Apply the same CSRF validation pattern used in `api/auth/login.php` to all state-changing endpoints.
 
 ---
 
-#### SEC-05 — Test Suite Accessible via HTTP
+#### SEC-05 — Test Suite Accessible via HTTP `STILL PRESENT`
 
-**File:** `.htaccess`
-
-`.htaccess` blocks `/includes/`, `/migrations/`, `/core/`, `/logs/` but does **NOT** block `/tests/`. The file `tests/test_suite.php` is directly accessible at `http://host/ux/Ux-Merchandise/tests/test_suite.php`. A browser request would execute the full test suite against the production database, creating and deleting users, products, and orders.
+`.htaccess` blocks `/includes/`, `/migrations/`, `/core/`, `/logs/` but does **NOT** block `/tests/`. `tests/test_suite.php` is directly accessible at `http://host/ux/Ux-Merchandise/tests/test_suite.php`, executing the full test suite against the production database.
 
 **Fix:**
-
 ```apache
 RewriteRule ^tests(/|$) - [F,L]
 ```
 
 ---
 
-#### SEC-06 — `requireAuth()` Passes for Admin Sessions on User Endpoints
+#### SEC-06 — `requireAuth()` Passes for Admin Sessions on User Endpoints `STILL PRESENT`
 
 **File:** `includes/helpers.php`
 
@@ -225,13 +215,13 @@ function requireAuth() {
 }
 ```
 
-An admin session satisfies `requireAuth()`. When `api/order/get.php` then reads `$_SESSION['user_id']` (not set for admins), PHP emits an Undefined Index Warning and the query executes with `user_id = NULL`.
+An admin session satisfies `requireAuth()`. User endpoints then read `$_SESSION['user_id']` (not set for admins), causing PHP Warnings and queries with `user_id = NULL`.
 
-**Fix:** User-facing endpoints should require `$_SESSION['user_id']` explicitly, not accept admin sessions.
+**Fix:** User-facing endpoints should require `$_SESSION['user_id']` explicitly.
 
 ---
 
-#### SEC-07 — Admin Authentication Check via localStorage
+#### SEC-07 — Admin Authentication Check via localStorage `STILL PRESENT`
 
 **File:** `admin/editproduct.php:552`
 
@@ -240,9 +230,9 @@ const adminSession = localStorage.getItem('adminSession');
 if (!adminSession) { window.location.href = 'admin-login.php'; return; }
 ```
 
-This is a client-side-only authentication check that any user can bypass by setting `adminSession` in localStorage. The PHP session check at the top of the file is the real gate, but this pattern could mislead future developers into removing the PHP check.
+Client-side-only check — bypassable by any user. PHP session check is the real gate but this pattern misleads future developers.
 
-**Fix:** Remove localStorage auth checks entirely. Rely only on PHP session validation.
+**Fix:** Remove localStorage auth checks. Rely only on PHP session validation.
 
 ---
 
@@ -250,24 +240,21 @@ This is a client-side-only authentication check that any user can bypass by sett
 
 **Files:** `reset-password.php`, `api/auth/forgot-password.php`
 
-Reset tokens appear in URL query parameters (`?token=...&email=...`), making them visible in browser history, server access logs, and HTTP Referer headers if the page loads any external resources (Google Fonts, etc.).
+Token and email appear in URL query parameters — visible in browser history, server access logs, and Referer headers.
 
-**Fix:** Submit token via POST body, or use a one-time URL that immediately invalidates on first load and stores token in session.
+**Fix:** Submit token via POST body, or use a one-time URL that immediately stores token in session on first load.
 
 ---
 
-#### SEC-09 — Dynamic Inline `onclick` Handlers in Admin JS
+#### SEC-09 — Dynamic Inline `onclick` Handlers in Admin JS `STILL PRESENT`
 
-**File:** `admin/admin-dashboard.js:215, 301-302`
+**File:** `admin/admin-dashboard.js:951`
 
 ```javascript
 btn.setAttribute('onclick', `toggleUserBlock(${userId}, this, ${newBlockedState})`);
 ```
 
-While `userId` is numeric in practice, this pattern is dangerous. If the value type changes or comes from a different source in future edits, it becomes a DOM-based XSS vector.
-
 **Fix:** Use data attributes and event delegation:
-
 ```javascript
 btn.dataset.userId = userId;
 btn.dataset.blocked = newBlockedState;
@@ -278,89 +265,78 @@ btn.addEventListener('click', handleToggleBlock);
 
 ### MEDIUM
 
-#### SEC-10 — Debug `console.log` in Production
+#### SEC-10 — Debug `console.log` in Production `STILL PRESENT`
 
 **File:** `admin/admin-login.php:115` — `console.log("Login submitted")` left in production code.
 
-#### SEC-11 — `api/auth/session.php` Returns HTTP 200 When Unauthenticated
+#### SEC-11 — `api/auth/session.php` Returns HTTP 200 When Unauthenticated `STILL PRESENT`
 
-Returns `{"status":"error","message":"Not authenticated"}` with HTTP 200 instead of 401. Clients that check HTTP status codes will treat unauthenticated state as success.
+Returns `{"status":"error","message":"Not authenticated"}` with HTTP 200 instead of 401.
 
-#### SEC-12 — User Profile Endpoints Return HTTP 200 on Auth Failure
+#### SEC-12 — User Profile Endpoints Return HTTP 200 on Auth Failure `STILL PRESENT`
 
 **Files:** `api/user/profile.php`, `api/user/update_profile.php` — return HTTP 200 with error body instead of 401.
 
 #### SEC-13 — No Rate Limiting on Signup
 
-Login is rate-limited (5 attempts / 10-minute lockout). Signup is not. An attacker can automate mass account creation for spam or credential stuffing prep.
+Login is rate-limited (5 attempts / 10-minute lockout). Signup is not.
 
 ---
 
 ## 4. BROKEN / NON-FUNCTIONAL FEATURES
 
-### BRK-01 — Search Page (`search.php`)
+### ~~BRK-01 — Search Page~~ `FIXED`
 
-**Status: COMPLETELY NON-FUNCTIONAL**
-
-The `search.php` page renders an empty HTML shell. There are no API calls, no JavaScript search logic, and no backend search endpoint. The search bar in the navbar routes to this page but returns nothing.
+`search.php` now implements product search with category, price, and sort filters.
 
 ---
 
-### BRK-02 — Wishlist Page (`wishlist.php`)
+### ~~BRK-02 — Wishlist Page~~ `FIXED`
 
-**Status: COMPLETELY NON-FUNCTIONAL**
-
-Same as search — renders an empty shell with no API calls or functionality. There is no wishlist API endpoint.
+`wishlist.php` now implements localStorage-based wishlist with add-to-cart integration.
 
 ---
 
-### BRK-03 — Payment Gateway (Card / UPI)
+### BRK-03 — Payment Gateway (Card / UPI) `STILL MISSING`
 
-**Status: NOT IMPLEMENTED**
-
-`checkout.php` displays Card and UPI payment options with a "Coming Soon" notice. Only Cash on Delivery (COD) is functional. COD is correctly blocked for digital products — but there is no alternative payment method, making **digital products effectively unpurchasable**.
+`checkout.php` shows Card and UPI with a "Coming Soon" notice. Only COD is functional. **Digital products are effectively unpurchasable** — COD is blocked for digital, no payment alternative exists.
 
 ---
 
-### BRK-04 — Google OAuth Login
+### BRK-04 — Google OAuth Login `STILL STUB`
 
-**File:** `script.js:2295`
+**File:** `script.js:2295, 2301`
 
 ```javascript
 // TODO: Implement Google OAuth
 window.handleGoogleLogin = function() { showToast('Google login coming soon...', 'info'); }
 ```
 
-Stub function only. No OAuth flow, no client ID configuration, no backend handler.
+No OAuth flow, no client ID, no backend handler.
 
 ---
 
-### BRK-05 — Admin Analytics Tab
+### BRK-05 — Admin Analytics Tab `STILL STUB`
 
-**Status: STUB**
-
-The Analytics tab in the admin dashboard shows a "coming soon" placeholder. No revenue charts, conversion funnels, or traffic data.
+The Analytics tab shows "coming soon." No revenue charts or data.
 
 ---
 
-### BRK-06 — Phone / OTP Login
+### BRK-06 — Phone / OTP Login `STILL STUB`
 
-**File:** `signin.php`
-
-The phone/OTP login UI exists but displays "coming soon." No backend OTP endpoint exists.
+Phone/OTP login UI exists but displays "coming soon." No backend OTP endpoint.
 
 ---
 
 ## 5. PERFORMANCE ISSUES
 
-### PERF-01 — N+1 Query in Order History
+### PERF-01 — N+1 Query in Order History `STILL PRESENT`
 
 **File:** `api/order/get.php`
 
-For a user with N orders, the endpoint executes 1 + N queries (one SELECT per order to fetch its items). With 50 orders: 51 database round-trips per API call.
+For N orders: 1 + N database round-trips. With 50 orders = 51 queries per API call.
 
-**Fix:** Use a JOIN:
-
+**Fix:** Use a single JOIN:
 ```sql
 SELECT o.*, oi.id AS item_id, oi.product_id, oi.quantity, oi.price,
        oi.size, oi.product_name, oi.product_image
@@ -376,31 +352,21 @@ ORDER BY o.created_at DESC
 
 **File:** `api/product/list.php`
 
-Returns all columns (`SELECT *`) for all active products in a single response. Also returns `commercial_price` publicly — a pricing data leak. No `LIMIT`/`OFFSET` or cursor pagination.
+Returns all columns (`SELECT *`) for all active products. Also exposes `commercial_price` publicly — a pricing data leak.
 
 ---
 
-### PERF-03 — INNER JOIN Breaks Order History on Product Deletion
+### ~~PERF-03 — INNER JOIN Breaks Order History on Product Deletion~~ `FIXED`
 
-**File:** `api/order/get.php`
-
-Uses `INNER JOIN products` — if a product is deleted after being ordered, that order's items disappear from the customer's history. The `order_items` table already has snapshot columns (`product_name`, `product_image`) that are never used.
-
-**Fix:** Switch to `LEFT JOIN` and use snapshot columns as fallback:
-
-```sql
-LEFT JOIN products p ON p.id = oi.product_id
--- Use: COALESCE(p.name, oi.product_name) AS display_name
-```
+`api/order/get.php` now uses `LEFT JOIN` — deleted products no longer cause order history rows to disappear.
 
 ---
 
-### PERF-04 — No Database Indexes Beyond Primary Keys
+### PERF-04 — No Database Indexes Beyond Primary Keys `STILL MISSING`
 
-All queries filtering by `user_id`, `order_id`, `product_id`, `status`, or `created_at` perform full table scans.
+All queries on `user_id`, `order_id`, `status`, `created_at` perform full table scans.
 
 **Recommended indexes:**
-
 ```sql
 ALTER TABLE orders ADD INDEX idx_orders_user_id (user_id);
 ALTER TABLE orders ADD INDEX idx_orders_status (status);
@@ -413,36 +379,23 @@ ALTER TABLE password_reset_tokens ADD INDEX idx_prt_expires (expires_at);
 
 ### PERF-05 — `admin-dashboard.php` is a 1,500-Line Monolith
 
-1,000+ lines of inline `<style>` CSS embedded in the PHP file. Every admin page load delivers the full stylesheet in the HTML response with no caching benefit.
+1,000+ lines of inline `<style>` CSS in the PHP file — no caching benefit.
 
 ---
 
 ## 6. DATABASE ISSUES
 
-### DB-01 — `product_type` vs `available_type` Column Conflict
+### DB-01 — `product_type` Column `RESOLVED`
 
-**Table:** `products`
-
-Two conflicting columns exist:
-- `available_type ENUM('physical','digital','both')` — used by all application code
-- `product_type ENUM('physical','digital')` — not referenced anywhere in application code
-
-Product id=31 has `available_type=digital` and `product_type=physical` — directly contradictory.
-
-**Fix:**
-
-```sql
-ALTER TABLE products DROP COLUMN product_type;
-```
+The conflicting `product_type` column is not present in the current schema. Only `available_type ENUM('physical','digital','both')` exists.
 
 ---
 
 ### DB-02 — No FK Constraint on `password_reset_tokens.user_id`
 
-`user_id` has an index but no foreign key. Deleting a user leaves orphaned reset tokens that cannot be automatically cleaned up.
+Deleting a user leaves orphaned reset tokens.
 
 **Fix:**
-
 ```sql
 ALTER TABLE password_reset_tokens
 ADD CONSTRAINT fk_prt_user
@@ -453,18 +406,17 @@ FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
 
 ### DB-03 — `order_items.product_id` FK Without `ON DELETE` Action
 
-References `products(id)` with no `ON DELETE` action (defaults to RESTRICT). This silently prevents product deletion when orders exist. The admin delete endpoint handles this gracefully, but the constraint should match the intended behavior.
+Defaults to RESTRICT — silently prevents product deletion when orders exist.
 
-**Recommended:** `ON DELETE SET NULL` — allows product deletion while preserving order history rows (use snapshot columns for display).
+**Recommended:** `ON DELETE SET NULL` — allows deletion while preserving order history rows.
 
 ---
 
-### DB-04 — `orders` Table Has No `updated_at` Column
+### DB-04 — `orders` Table Has No `updated_at` Column `STILL MISSING`
 
-There is no timestamp for when an order status last changed. Order status history is completely untrackable.
+No timestamp for when order status last changed.
 
 **Fix:**
-
 ```sql
 ALTER TABLE orders ADD COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;
 ```
@@ -473,22 +425,22 @@ ALTER TABLE orders ADD COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON 
 
 ### DB-05 — Test Data Present in Database
 
-- User: `ts_admin@test.uxpacific.local` (test admin account from test suite)
-- Product: `TS_Product_setup` (auto-created by test suite, empty `image` field)
+- User: `ts_admin@test.uxpacific.local`
+- Product: `TS_Product_setup` (empty `image` field)
 
-These must be deleted before production deployment.
+Must be deleted before production.
 
 ---
 
 ### DB-06 — `orders.shipping_address` Stored as JSON String
 
-The full shipping address is serialized as a JSON string in a TEXT column. This makes querying by city, state, or country impossible and is not normalized.
+Full address in a TEXT column — unqueryable by city/state/country.
 
 ---
 
 ### DB-07 — Product Name Typo in Live Data
 
-Product id=31 is named **"Webiste Template"** (missing 'r'). This is customer-visible.
+Product id=31 is named **"Webiste Template"** (missing 'r').
 
 **Fix:** `UPDATE products SET name = 'Website Template' WHERE id = 31;`
 
@@ -496,77 +448,73 @@ Product id=31 is named **"Webiste Template"** (missing 'r'). This is customer-vi
 
 ### DB-08 — No Soft Delete on Products
 
-Products are hard-deleted. Combined with the INNER JOIN issue (PERF-03), deleting any product corrupts the order history display for all customers who purchased it.
+Products are hard-deleted. Combined with any INNER JOIN, deleting a product corrupts order history for customers who purchased it.
 
 ---
 
 ## 7. CODE QUALITY ISSUES
 
-### CQ-01 — Inconsistent API Response Formats
+### CQ-01 — Inconsistent API Response Formats `STILL PRESENT`
 
-Most endpoints use `sendResponse()` from `helpers.php`, which wraps all responses in `{"status":"...","message":"...","data":...}`. However:
-
-- `api/admin/order/list.php` uses raw `echo json_encode($orders)` — no wrapper, direct array output
-- This makes client-side response parsing inconsistent
+`api/admin/order/list.php:45` uses `echo json_encode($orders)` — no `sendResponse()` wrapper, direct array output, inconsistent with all other endpoints.
 
 ---
 
-### CQ-02 — Inconsistent HTTP Status Codes
+### CQ-02 — Inconsistent HTTP Status Codes `STILL PRESENT`
 
 | Endpoint | Issue |
 |---|---|
 | `api/auth/session.php` | Returns 200 when unauthenticated (should be 401) |
 | `api/user/profile.php` | Returns 200 on auth failure (should be 401) |
 | `api/user/update_profile.php` | Returns 200 on auth failure (should be 401) |
-| `api/auth/signup.php` | Missing `http_response_code()` on validation errors |
 
 ---
 
-### CQ-03 — `checkAdminAuth()` Always Returns True
+### CQ-03 — `checkAdminAuth()` Always Returns True `STILL PRESENT`
 
-**File:** `admin/admin-dashboard.js`
+**File:** `admin/admin-dashboard.js:16-18`
 
-This function is vestigial — it unconditionally returns `true`. Real authentication is handled by the PHP session check at the top of `admin-dashboard.php`. The JS function creates a false sense of security and could mislead future developers.
+```javascript
+function checkAdminAuth() {
+  return true;
+}
+```
+
+Vestigial function — creates false sense of security.
 
 ---
 
-### CQ-04 — Debug Statements in Production Code
+### CQ-04 — Debug Statements in Production Code `STILL PRESENT`
 
-| File | Count | Details |
-|---|---|---|
-| `script.js` | 10 | `console.error` / `console.warn` calls |
-| `admin/admin-dashboard.js` | 16 | `console.error` calls |
-| `admin/admin-login.php` | 1 | `console.log("Login submitted")` — HIGH severity |
+| File | Detail |
+|---|---|
+| `script.js` | 10 `console.error` / `console.warn` calls |
+| `admin/admin-dashboard.js` | 16 `console.error` calls |
+| `admin/admin-login.php:115` | `console.log("Login submitted")` — HIGH severity |
 
 ---
 
 ### CQ-05 — Commented-Out Dead Code in `script.js`
 
-Lines 56-77 and 82-90 contain commented-out product filtering and mobile menu logic that should be removed rather than left in the source.
+Lines 56–77 and 82–90 contain commented-out product filtering and mobile menu logic.
 
 ---
 
 ### CQ-06 — `loadCartPage()` is 180+ Lines
 
-This single function in `script.js` handles cart fetching, rendering, event binding, and order summary updates. Should be decomposed into smaller units.
+Single function handles cart fetching, rendering, event binding, and order summary — needs decomposing.
 
 ---
 
 ### CQ-07 — Unimplemented Feature TODO Comments
 
-**File:** `script.js:2295, 2301`
-
-```javascript
-// TODO: Implement Google OAuth
-```
-
-Two identical TODO comments for a feature with no implementation timeline or tracking.
+**File:** `script.js:2295, 2301` — two identical `// TODO: Implement Google OAuth` with no tracking.
 
 ---
 
 ### CQ-08 — `admin/addproduct.php` Duplicates Dashboard Functionality
 
-A standalone add-product form exists at `admin/addproduct.php` that duplicates the add-product feature already present in the admin dashboard. These two implementations may drift apart over time.
+Standalone add-product form duplicates the feature in the admin dashboard — these two implementations will drift.
 
 ---
 
@@ -574,17 +522,17 @@ A standalone add-product form exists at `admin/addproduct.php` that duplicates t
 
 ### Frontend Pages
 
-| URL | Expected | Notes |
+| URL | Status | Notes |
 |---|---|---|
 | `/` (index.php) | 200 | Homepage |
 | `/shopAll.php` | 200 | Product listing |
+| `/search.php` | 200 | ✅ Now functional |
+| `/wishlist.php` | 200 | ✅ Now functional |
 | `/signin.php` | 200 | Login form |
 | `/signup.php` | 200 | Registration form |
-| `/checkout.php` | 200 | Checkout (COD only) |
-| `/forgot-password.php` | 200 | Password reset request |
-| `/search.php` | 200 | Empty shell — broken |
-| `/wishlist.php` | 200 | Empty shell — broken |
-| `/admin/admin-login.php` | 200 | Admin login form |
+| `/checkout.php` | 200 | COD only |
+| `/forgot-password.php` | 200 | Password reset |
+| `/admin/admin-login.php` | 200 | Admin login |
 | `/admin/admin-dashboard.php` | 302 → admin-login | PHP session gate |
 
 ### Sensitive Files (`.htaccess` protection)
@@ -598,15 +546,14 @@ A standalone add-product form exists at `admin/addproduct.php` that duplicates t
 
 ### API Endpoints (unauthenticated)
 
-| Endpoint | Expected Status | Notes |
-|---|---|---|
-| `GET /api/product/list.php` | 200 | Public — correct |
-| `GET /api/cart/list.php` | 401 | Auth required |
-| `GET /api/order/get.php` | 401 | Auth required |
-| `GET /api/user/profile.php` | **200** | **Returns 200 with error body — bug** |
-| `GET /api/admin/user/list.php` | 401 | Admin required |
-| `GET /api/admin/stats/overview.php` | 401 | Admin required |
-| `GET /api/auth/session.php` | **200** | **Returns 200 when unauthenticated — bug** |
+| Endpoint | Expected | Actual | Notes |
+|---|---|---|---|
+| `GET /api/product/list.php` | 200 | 200 | Public — correct |
+| `GET /api/cart/list.php` | 401 | 401 | Correct |
+| `GET /api/order/get.php` | 401 | 401 | Correct |
+| `GET /api/user/profile.php` | 401 | **200** | Bug — returns error body with 200 |
+| `GET /api/admin/user/list.php` | 401 | 401 | Correct |
+| `GET /api/auth/session.php` | 401 | **200** | Bug — returns error body with 200 |
 
 ---
 
@@ -614,14 +561,14 @@ A standalone add-product form exists at `admin/addproduct.php` that duplicates t
 
 | File | Issue |
 |---|---|
-| `admin/addproduct.php` | Parallel add-product form, functionality duplicated in dashboard |
-| `migrations/setup_db.php` | One-time migration script left in webroot |
-| `migrations/check_schema.php` | Dev utility, not production code |
+| `admin/addproduct.php` | Parallel add-product form, duplicated in dashboard |
+| `migrations/setup_db.php` | One-time migration left in webroot |
+| `migrations/check_schema.php` | Dev utility |
 | `migrations/fix_user_id.php` | One-time migration |
 | `migrations/enforce_user_id.php` | One-time migration |
 | `migrations/add_missing_product_columns.php` | One-time migration |
 | `script.js:56-90` | Commented-out filter and mobile menu code |
-| `admin-dashboard.js:checkAdminAuth()` | Always returns `true`; vestigial function |
+| `admin-dashboard.js:checkAdminAuth()` | Always returns `true`; vestigial |
 
 ---
 
@@ -635,15 +582,12 @@ A standalone add-product form exists at `admin/addproduct.php` that duplicates t
 PHP Warning: Undefined index: user_id in api/order/get.php on line 7
 ```
 
-**Cause:** `requireAuth()` passes when an admin is logged in, but `$_SESSION['user_id']` is not set for admin sessions. Line 7 reads `$_SESSION['user_id']` without null-coalescing. The resulting query runs with `user_id = NULL`, returning incorrect results.
+**Cause:** `requireAuth()` passes for admin sessions but `$_SESSION['user_id']` is not set for admins. Line 7 reads it without null-coalescing. Query runs with `user_id = NULL`.
 
-**Status:** Active — fires on every request to this endpoint from an authenticated admin session. Confirmed in log file.
+**Status:** Active — fires on every request to this endpoint from an authenticated admin session.
 
 **Fix:**
 ```php
-// Replace:
-$userId = $_SESSION['user_id'];
-// With:
 if (empty($_SESSION['user_id'])) {
     sendResponse("error", "Unauthorized", null, 401);
 }
@@ -658,60 +602,59 @@ $userId = (int) $_SESSION['user_id'];
 
 1. **Rotate SMTP credentials** — Brevo key `FTkyPOScWAUm46zV` is in git history and must be considered compromised
 2. **Create dedicated MySQL user** — replace `root`/empty-password with `ux_app` with minimal privileges
-3. **Block `/tests/` in `.htaccess`** — add `RewriteRule ^tests(/|$) - [F,L]`
-4. **Fix `requireAuth()`** — separate user vs admin session checks; user endpoints should reject admin sessions
-5. **Fix `api/order/get.php`** — add explicit user_id check, switch to LEFT JOIN, use snapshot columns for product data
-6. **Clean test data from DB** — delete `ts_admin@test.uxpacific.local` user and `TS_Product_setup` product
+3. **Block `/tests/` in `.htaccess`** — `RewriteRule ^tests(/|$) - [F,L]`
+4. **Fix `requireAuth()`** — user endpoints must reject admin sessions; require `$_SESSION['user_id']` explicitly
+5. **Fix `api/order/get.php`** — add explicit `user_id` check (resolves active PHP Warning)
+6. **Clean test data from DB** — delete `ts_admin@test.uxpacific.local` and `TS_Product_setup`
 
 ### Priority 2 — Before Launch
 
 7. Add CSRF token validation to all cart, address, and contact endpoints
-8. Implement `search.php` — product search API and frontend
-9. Implement `wishlist.php` — wishlist API and frontend
-10. Add a real payment gateway (Stripe or Razorpay) to enable digital product purchases
-11. Drop `product_type` column: `ALTER TABLE products DROP COLUMN product_type;`
-12. Add FK on `password_reset_tokens.user_id` with `ON DELETE CASCADE`
-13. Fix XSS in admin dashboard — apply `escapeHtml()` to `category` field
-14. Fix HTTP status codes — all auth failures must return 401, not 200
-15. Add `LIMIT`/`OFFSET` pagination to `api/product/list.php`
-16. Remove `commercial_price` from public product list API response
-17. Add recommended DB indexes (see PERF-04)
+8. Add a real payment gateway (Stripe or Razorpay) to enable digital product purchases
+9. Fix XSS in admin dashboard — `escapeHtml(category)` in `admin-dashboard.js:281`
+10. Fix HTTP status codes — all auth failures must return 401
+11. Add `LIMIT`/`OFFSET` pagination to `api/product/list.php`
+12. Remove `commercial_price` from public product list API response
+13. Add recommended DB indexes (see PERF-04)
+14. Add FK on `password_reset_tokens.user_id` with `ON DELETE CASCADE`
+15. Add `updated_at` column to `orders` table
 
 ### Priority 3 — Post-Launch Polish
 
-18. Fix N+1 query in order history with a JOIN
-19. Add `updated_at` column to `orders` table
-20. Implement soft delete on products
-21. Remove all debug `console.log/error` statements from frontend JS
-22. Remove dead code (commented JS, redundant addproduct.php, migration scripts in webroot)
-23. Decompose `loadCartPage()` and other 100+ line functions
-24. Normalize `shipping_address` out of JSON TEXT into proper columns
-25. Fix product name typo: `UPDATE products SET name='Website Template' WHERE id=31;`
-26. Add order status change audit trail
-27. Implement analytics tab with revenue and product data
-28. Remove localStorage admin auth check in `admin/editproduct.php`
-29. Convert inline `onclick` attributes to event delegation in admin JS
-30. Implement Google OAuth or remove the placeholder UI
+16. Fix N+1 query in order history with a JOIN
+17. Implement soft delete on products
+18. Remove all debug `console.log/error` from frontend JS
+19. Remove dead code (commented JS, migration scripts in webroot, `addproduct.php`)
+20. Decompose `loadCartPage()` and other 100+ line functions
+21. Normalize `shipping_address` out of JSON TEXT
+22. Fix product name typo: `UPDATE products SET name='Website Template' WHERE id=31;`
+23. Add `updated_at` / order status audit trail
+24. Implement analytics tab
+25. Remove localStorage admin auth check in `admin/editproduct.php`
+26. Convert inline `onclick` attributes to event delegation in admin JS
+27. Implement Google OAuth or remove placeholder UI
+28. Fix `checkAdminAuth()` function (remove or make real)
 
 ---
 
 ## 12. PRODUCTION BLOCKERS
 
-The following 9 issues **must be resolved** before this application handles real users or payment data:
+The following **7 issues** must be resolved before this application handles real users or payment data:
 
 | # | Blocker | Severity |
 |---|---|---|
 | 1 | SMTP password in `.env` is in git history — credentials must be rotated | CRITICAL |
 | 2 | MySQL root with no password — replace with restricted application user | CRITICAL |
 | 3 | `/tests/test_suite.php` accessible via HTTP — executes test suite against live DB | CRITICAL |
-| 4 | Search page (`search.php`) is completely non-functional | HIGH |
-| 5 | Wishlist page (`wishlist.php`) is completely non-functional | HIGH |
-| 6 | Digital products cannot be purchased — COD blocked, no working payment alternative | HIGH |
-| 7 | `api/order/get.php` emits PHP Warnings and returns wrong data for admin sessions | HIGH |
-| 8 | No CSRF protection on cart mutation endpoints | HIGH |
-| 9 | Stored XSS in admin dashboard via product category field | HIGH |
+| 4 | Digital products cannot be purchased — COD blocked, no working payment alternative | HIGH |
+| 5 | `api/order/get.php` emits PHP Warnings and returns wrong data for admin sessions | HIGH |
+| 6 | No CSRF protection on cart mutation endpoints | HIGH |
+| 7 | Stored XSS in admin dashboard via product category field | HIGH |
+
+*Resolved since last audit: search.php non-functional (BRK-01), wishlist.php non-functional (BRK-02) — removed from blockers.*
 
 ---
 
-*Report generated by Claude Code automated audit — 2026-02-19*
-*Methodology: static file analysis · DB schema inspection · test suite execution (29 passed / 0 failed / 2 skipped) · error log review · JS/CSS security audit*
+*Report updated by Claude Code — 2026-03-25*
+*Previous audit: 2026-02-19 · Score was 61/100 · Now 65/100*
+*Methodology: static file analysis · DB schema inspection · git log review · error log review · JS/CSS/PHP audit*

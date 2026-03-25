@@ -3,60 +3,70 @@ header('Content-Type: application/json');
 require_once '../../includes/config.php';
 require_once '../../includes/helpers.php';
 
-requireAuth();
-$userId = $_SESSION['user_id'];
+// SEC-06: require user session only — admin sessions rejected
+requireUserAuth();
+$userId = (int) $_SESSION['user_id'];
 
-// Fetch orders for the user
-$stmt = $conn->prepare("SELECT id, order_number, total, status, created_at, shipping_address FROM orders WHERE user_id = ? ORDER BY created_at DESC");
+// Single JOIN query — eliminates N+1 (PERF-01)
+// Uses snapshot columns (product_name, product_image) so deleted products
+// never break order history (PERF-03)
+$sql = "
+    SELECT
+        o.id            AS order_id,
+        o.order_number,
+        o.total,
+        o.status,
+        o.payment_method,
+        o.created_at,
+        o.shipping_address,
+        oi.id           AS item_id,
+        oi.product_id,
+        oi.quantity,
+        oi.price,
+        oi.size,
+        COALESCE(oi.product_name, p.name, 'Deleted Product') AS item_name,
+        COALESCE(oi.product_image, p.image, 'img/sticker.webp') AS item_image
+    FROM orders o
+    LEFT JOIN order_items oi ON oi.order_id = o.id
+    LEFT JOIN products p     ON p.id = oi.product_id
+    WHERE o.user_id = ?
+    ORDER BY o.created_at DESC, oi.id ASC
+";
+
+$stmt = $conn->prepare($sql);
 $stmt->bind_param("i", $userId);
 $stmt->execute();
 $result = $stmt->get_result();
 
-$orders = [];
+// Group rows by order
+$ordersMap = [];
+while ($row = $result->fetch_assoc()) {
+    $oid = $row['order_id'];
 
-while ($orderRow = $result->fetch_assoc()) {
-    $orderId = $orderRow['id'];
-    
-    // Fetch items for this order
-    // Note: We join with products to ensuring we have latest image/name if needed, 
-    // OR strictly use what was in order time. 
-    // Usually order_items table should have snapshotted name/price. 
-    // Our order_items table relies on product_id. 
-    // Let's join products to get image and name.
-    
-    $itemsStmt = $conn->prepare("SELECT oi.quantity, oi.price, oi.size, p.name, p.image, p.id as product_id 
-                                 FROM order_items oi 
-                                 JOIN products p ON oi.product_id = p.id 
-                                 WHERE oi.order_id = ?");
-    $itemsStmt->bind_param("i", $orderId);
-    $itemsStmt->execute();
-    $itemsRes = $itemsStmt->get_result();
-    
-    $items = [];
-    while ($item = $itemsRes->fetch_assoc()) {
-        $items[] = [
-            'id' => $item['product_id'],
-            'name' => $item['name'],
-            'image' => $item['image'],
-            'price' => (float)$item['price'],
-            'quantity' => (int)$item['quantity'],
-            'size' => $item['size']
+    if (!isset($ordersMap[$oid])) {
+        $ordersMap[$oid] = [
+            'orderNumber' => $row['order_number'],
+            'date'        => $row['created_at'],
+            'status'      => $row['status'],
+            'total'       => (float) $row['total'],
+            'shipping'    => json_decode($row['shipping_address'], true),
+            'items'       => []
         ];
     }
-    $itemsStmt->close();
-    
-    $orders[] = [
-        'orderNumber' => $orderRow['order_number'],
-        'date' => $orderRow['created_at'],
-        'status' => $orderRow['status'],
-        'total' => (float)$orderRow['total'],
-        'shipping' => json_decode($orderRow['shipping_address'], true),
-        'items' => $items
-    ];
+
+    if (!empty($row['item_id'])) {
+        $ordersMap[$oid]['items'][] = [
+            'id'       => $row['product_id'],
+            'name'     => $row['item_name'],
+            'image'    => $row['item_image'],
+            'price'    => (float) $row['price'],
+            'quantity' => (int)   $row['quantity'],
+            'size'     => $row['size']
+        ];
+    }
 }
 
 $stmt->close();
 $conn->close();
 
-sendResponse("success", "Orders fetched successfully", $orders);
-?>
+sendResponse("success", "Orders fetched successfully", array_values($ordersMap));

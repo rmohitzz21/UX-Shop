@@ -223,20 +223,21 @@
       .btn-primary-modern {
         width: 100%;
         padding: 0.875rem;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background-color: #6f4bff;
         color: white;
         border: none;
-        border-radius: 12px;
+        border-radius: 999px;
         font-size: 1rem;
         font-weight: 600;
         cursor: pointer;
-        transition: all 0.2s;
+        transition: background-color 0.2s, transform 0.15s;
         margin-bottom: 1.5rem;
       }
 
       .btn-primary-modern:hover {
+        background-color: #7c59ff;
         transform: translateY(-2px);
-        box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        box-shadow: 0 8px 24px rgba(111, 75, 255, 0.35);
       }
 
       .btn-primary-modern:active {

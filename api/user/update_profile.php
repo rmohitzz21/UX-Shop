@@ -2,8 +2,9 @@
 header('Content-Type: application/json');
 require_once '../../includes/config.php';
 
-// Check if user is logged in
+// SEC-12: return 401, not 200
 if (!isset($_SESSION['user_id'])) {
+    http_response_code(401);
     echo json_encode(['status' => 'error', 'message' => 'Unauthorized']);
     exit;
 }

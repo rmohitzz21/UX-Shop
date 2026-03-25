@@ -6,6 +6,7 @@
   <meta charset="UTF-8" />
   <title>My Account – UX Pacific Shop</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="csrf-token" content="<?php echo htmlspecialchars($_SESSION['csrf_token'] ?? ''); ?>" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
     rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
@@ -187,8 +188,7 @@
                   <h2 class="tab-title">Saved Addresses</h2>
                 </div>
 
-                <button class="btn-primary small" onclick="showAddAddressForm()" style="width: 180px; height: 41px; text-align: center;margin-bottom: 25px;
-">Add Address</button>
+                <button class="btn-primary small add-address-btn" onclick="showAddAddressForm()">Add Address</button>
 
 
                 <div id="addresses-list" class="addresses-list">
@@ -590,7 +590,7 @@
 
         fetch('api/address/add.php', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCsrfToken() },
             body: JSON.stringify(payload)
         })
         .then(res => res.json())
@@ -623,7 +623,7 @@
       if (confirm('Are you sure you want to delete this address?')) {
         fetch('api/address/delete.php', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCsrfToken() },
             body: JSON.stringify({ id: id })
         })
         .then(res => res.json())

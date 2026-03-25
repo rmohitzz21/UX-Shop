@@ -4,6 +4,7 @@
 
 header('Content-Type: application/json');
 require_once '../../includes/config.php';
+require_once '../../includes/helpers.php';
 require_once '../../core/Mailer.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -11,6 +12,8 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     echo json_encode(['status' => 'error', 'message' => 'Method not allowed']);
     exit;
 }
+
+validateCsrf();
 
 $data = json_decode(file_get_contents('php://input'), true);
 if (!$data) {

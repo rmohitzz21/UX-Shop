@@ -141,7 +141,7 @@
                 <div class="success-message" style="margin-bottom: 24px;">
                   If that email is registered, a reset link has been sent. Please check your inbox.
                 </div>
-                <a href="signin.php" class="btn-primary" style="width: 100%; text-align: center; display: block;">
+                <a href="signin.php" class="btn-primary auth-submit">
                   Back to Sign In
                 </a>
               </div>

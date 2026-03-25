@@ -1,8 +1,10 @@
+<?php require_once 'includes/config.php'; ?>
 <!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="csrf-token" content="<?php echo htmlspecialchars($_SESSION['csrf_token'] ?? ''); ?>" />
     <meta name="description" content="Search for UX/UI design resources, merchandise, and products at UX Pacific Shop" />
     <meta name="keywords" content="UX design, UI templates, design resources, search products" />
     <title>Search Products – UX Pacific Shop</title>

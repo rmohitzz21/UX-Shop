@@ -548,13 +548,9 @@ if (empty($_SESSION['csrf_token'])) {
     --------------------------------*/
     document.addEventListener('DOMContentLoaded', async () => {
 
-      // Auth Check
-      const adminSession = JSON.parse(localStorage.getItem('adminSession'));
-      if (!adminSession) {
-          window.location.href = 'admin-login.php';
-          return;
-      }
-      
+      // Auth is enforced by PHP session at the top of this file.
+      // No client-side localStorage auth check — it is bypassable and misleading.
+
       // Theme setup
       const savedTheme = localStorage.getItem('admin-theme') || 'light';
       document.body.setAttribute('data-theme', savedTheme);

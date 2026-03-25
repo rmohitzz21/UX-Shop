@@ -146,6 +146,7 @@ $related_html = getRelatedProducts($conn, $product);
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="csrf-token" content="<?php echo htmlspecialchars($_SESSION['csrf_token'] ?? ''); ?>" />
     <meta name="description" content="<?php echo $name; ?> - Premium design resource from UX Pacific Shop." />
     <title><?php echo $name; ?> – UX Pacific Shop</title>
     <link
@@ -313,13 +314,13 @@ $related_html = getRelatedProducts($conn, $product);
 
         <div class="product-buttons">
           <?php if ($stock <= 0 && $available_type === 'physical'): ?>
-            <button class="buy-btn" disabled style="opacity:0.5; cursor:not-allowed;">Out of Stock</button>
+            <button class="btn-primary product-page-btn" disabled style="opacity:0.45; cursor:not-allowed;">Out of Stock</button>
           <?php else: ?>
             <?php if ($stock > 0 && $stock <= 5 && $available_type !== 'digital'): ?>
               <p style="color: #ef4444; font-size: 0.875rem; margin-bottom: 0.5rem; font-weight: 600;">Only <?php echo $stock; ?> left in stock!</p>
             <?php endif; ?>
-            <button class="buy-btn" onclick="addToCartWrapper(<?php echo $product_id; ?>)">Add to Cart</button>
-            <button class="buy-btn buy-now-btn" onclick="handleBuyNowWrapper(<?php echo $product_id; ?>)">Buy Now</button>
+            <button class="btn-ghost product-page-btn" onclick="addToCartWrapper(<?php echo $product_id; ?>)">Add to Cart</button>
+            <button class="btn-primary product-page-btn" onclick="handleBuyNowWrapper(<?php echo $product_id; ?>)">Buy Now</button>
           <?php endif; ?>
         </div>
 

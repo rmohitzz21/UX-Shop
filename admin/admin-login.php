@@ -112,7 +112,6 @@ if (empty($_SESSION['csrf_token'])) {
     <script>
       function handleAdminLogin(event) {
         event.preventDefault(); // STOP RELOAD
-        console.log("Login submitted");
         
         const form = document.getElementById('admin-login-form');
         const email = form.email.value.trim();

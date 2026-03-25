@@ -2,6 +2,22 @@
 header('Content-Type: application/json');
 require_once '../../includes/config.php';
 
+// SEC-13: Rate limit signup — max 5 attempts per IP per hour
+$ip = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+$rateLimitKey = 'signup_rl_' . md5($ip);
+if (!isset($_SESSION[$rateLimitKey])) {
+    $_SESSION[$rateLimitKey] = ['count' => 0, 'window_start' => time()];
+}
+if (time() - $_SESSION[$rateLimitKey]['window_start'] > 3600) {
+    $_SESSION[$rateLimitKey] = ['count' => 0, 'window_start' => time()];
+}
+$_SESSION[$rateLimitKey]['count']++;
+if ($_SESSION[$rateLimitKey]['count'] > 5) {
+    http_response_code(429);
+    echo json_encode(['status' => 'error', 'message' => 'Too many signup attempts. Please try again later.']);
+    exit;
+}
+
 // Get JSON input
 $input = json_decode(file_get_contents('php://input'), true);
 

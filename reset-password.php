@@ -113,7 +113,7 @@ $email = isset($_GET['email']) ? trim(strtolower($_GET['email'])) : '';
                   <strong>Password updated successfully!</strong><br>
                   You can now sign in with your new password.
                 </div>
-                <a href="signin.php" class="btn-primary" style="width:100%;text-align:center;display:block">
+                <a href="signin.php" class="btn-primary auth-submit">
                   Go to Sign In
                 </a>
               </div>

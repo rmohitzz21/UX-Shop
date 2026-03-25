@@ -1,8 +1,10 @@
+<?php require_once 'includes/config.php'; ?>
 <!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="csrf-token" content="<?php echo htmlspecialchars($_SESSION['csrf_token'] ?? ''); ?>" />
     <meta name="description" content="Your wishlist of favorite UX/UI design resources and products at UX Pacific Shop" />
     <meta name="keywords" content="wishlist, favorites, saved products, UX design products" />
     <title>My Wishlist – UX Pacific Shop</title>

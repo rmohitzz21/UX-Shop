@@ -5,6 +5,7 @@
     <meta charset="UTF-8" />
     <title>Checkout – UX Pacific Shop</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="csrf-token" content="<?php echo htmlspecialchars($_SESSION['csrf_token'] ?? ''); ?>" />
     <link
       href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
       rel="stylesheet"
@@ -281,11 +282,10 @@
                       </label>
                     </div>
 
-                    <!-- Card/UPI notice — payment gateway not yet integrated -->
-                    <div id="card-details" class="card-details" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:16px;margin-top:12px">
-                      <p style="margin:0;color:#aaa;font-size:0.9rem;">
-                        <strong style="color:#e94560">Payment gateway coming soon.</strong><br>
-                        Card and UPI payments will be processed via a secure payment gateway. For now, please select <strong>Cash on Delivery</strong> if available, or your order will be recorded as pending payment.
+                    <!-- Razorpay handles card/UPI — shown when card or UPI is selected -->
+                    <div id="card-details" class="card-details" style="background:rgba(111,75,255,0.06);border:1px solid rgba(111,75,255,0.25);border-radius:8px;padding:16px;margin-top:12px">
+                      <p style="margin:0;color:#ccc;font-size:0.9rem;">
+                        💳 You will be redirected to <strong style="color:#9b8cff">Razorpay</strong> to complete your payment securely. Supports Cards, UPI, Net Banking, and Wallets.
                       </p>
                     </div>
                   </div>

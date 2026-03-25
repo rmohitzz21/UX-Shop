@@ -2,13 +2,10 @@
 // api/cart/merge.php
 header('Content-Type: application/json');
 require_once '../../includes/config.php';
+require_once '../../includes/helpers.php';
 
-// Check auth
-if (!isset($_SESSION['user_id'])) {
-    http_response_code(401);
-    echo json_encode(['status' => 'error', 'message' => 'Unauthorized']);
-    exit;
-}
+requireUserAuth();
+validateCsrf();
 
 $user_id = $_SESSION['user_id'];
 $data = json_decode(file_get_contents("php://input"), true);
