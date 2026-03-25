@@ -38,7 +38,7 @@
         <div class="nav-logo">
           <!-- replace with your logo -->
           <a href="index.php">
-            <img src="img/3.png" alt="UX Pacific" />
+            <img src="img/logo.webp" alt="UX Pacific" />
           </a>
         </div>
 
