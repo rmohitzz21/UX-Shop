@@ -70,6 +70,20 @@ Individual items within an order.
 *   `product_id`: Foreign Key -> products
 *   `size`: Snapshot of selected size
 *   `price`: Snapshot of price at purchase time
+*   `product_name`: Snapshot of product name at purchase time
+*   `product_image`: Snapshot of product image path
+
+### **6. Addresses Table (`addresses`)**
+Saved shipping/billing addresses for users.
+*   `id`: Primary Key
+*   `user_id`: Foreign Key -> users (CASCADE delete)
+*   `first_name`, `last_name`: Recipient name
+*   `address_line1`, `address_line2`: Street address
+*   `city`, `state`, `zip_code`, `country`: Location
+*   `phone`: Contact number
+*   `label`: User-defined label (Home, Work, etc.)
+*   `address_type`: ENUM('shipping', 'billing', 'both')
+*   `is_default`: Boolean flag for default address
 
 ---
 
@@ -167,3 +181,61 @@ Individual items within an order.
 2.  **Payment Gateway:** Replace dummy checkout with Stripe/Razorpay integration.
 3.  **API Versioning:** Introduce `/api/v1/` structure for long-term maintenance.
 4.  **Frontend Framework:** Migrate frontend to React/Vue for a true Single Page Application (SPA) experience while keeping this robust backend.
+
+---
+
+## 9️⃣ Address Management System
+
+> **Full Design Document:** See [`docs/ADDRESS_MANAGEMENT_SYSTEM.md`](docs/ADDRESS_MANAGEMENT_SYSTEM.md) for complete implementation details.
+
+### **Overview**
+The Address Management System enables users to save, manage, and reuse shipping addresses during checkout.
+
+### **Current Status: Issues Identified**
+
+| Issue | Location | Status |
+|-------|----------|--------|
+| `saveAddress` INSERT uses wrong column names | `api/order/create.php:205` | 🔴 Bug |
+| No address selection UI at checkout | `checkout.php` | 🟡 Missing |
+| No address edit (update) endpoint | `api/address/` | 🟡 Missing |
+| No set-default endpoint | `api/address/` | 🟡 Missing |
+
+### **Address API Endpoints**
+
+| Endpoint | Method | Status | Description |
+|----------|--------|--------|-------------|
+| `/api/address/get.php` | GET | ✅ Working | List user's addresses |
+| `/api/address/add.php` | POST | ✅ Working | Add new address |
+| `/api/address/update.php` | POST | 🆕 Planned | Edit existing address |
+| `/api/address/delete.php` | POST | ✅ Working | Delete address |
+| `/api/address/set-default.php` | POST | 🆕 Planned | Set default address |
+
+### **Checkout Integration Plan**
+
+1. **Fetch saved addresses** on checkout page load
+2. **Display address selector** (radio cards) if user has saved addresses
+3. **Pre-select default address** automatically
+4. **"Use different address"** option shows manual entry form
+5. **"Save address" checkbox** for new addresses
+6. **Order creation** accepts `savedAddressId` OR manual shipping data
+
+### **Database Migration Required**
+
+```sql
+-- migrations/001_enhance_addresses_table.sql
+ALTER TABLE `addresses`
+  ADD COLUMN `label` VARCHAR(50) DEFAULT NULL,
+  ADD COLUMN `address_type` ENUM('shipping', 'billing', 'both') DEFAULT 'both';
+```
+
+### **Key Files to Modify**
+
+| File | Changes |
+|------|---------|
+| `api/order/create.php` | Fix saveAddress bug (line 205), add savedAddressId support |
+| `api/address/add.php` | Add label, addressType parameters |
+| `checkout.php` | Add address selector HTML section |
+| `script.js` | Add address fetch/render functions, modify handleCheckout |
+| `style.css` | Add address card styles |
+| `account.php` | Enhance addresses tab with edit/default functionality |
+
