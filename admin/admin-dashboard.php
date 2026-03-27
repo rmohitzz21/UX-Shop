@@ -49,7 +49,7 @@ if (empty($_SESSION['csrf_token'])) {
       --admin-border: var(--admin-border-dark);
       --admin-sidebar: var(--admin-sidebar-dark);
       --admin-overlay: var(--admin-overlay-dark);
-      --admin-logo-img: url('img/dark-logo.webp');
+      --admin-logo-img: url('../img/logo1.webp');
 
     }
 
@@ -1034,8 +1034,8 @@ if (empty($_SESSION['csrf_token'])) {
     <aside class="admin-sidebar" id="admin-sidebar">
       <div class="admin-sidebar-header">
         <a href="../index.php" class="admin-logo">
-          <img src="../img/Logo-Dark.webp" alt="UX Pacific" class="logo-light" />
-          <img src="../img/LOGO.webp" alt="UX Pacific" class="logo-dark" />
+          <img src="../img/logo1.webp" alt="UX Pacific" class="logo-light" />
+          <img src="../img/logo1.webp" alt="UX Pacific" class="logo-dark" />
           <!-- <span class="admin-logo-text">UX Pacific</span> -->
         </a>
         <button class="sidebar-toggle" onclick="toggleSidebarCollapse()" aria-label="Toggle sidebar">

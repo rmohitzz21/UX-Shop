@@ -163,7 +163,7 @@ $related_html = getRelatedProducts($conn, $product);
         <div class="nav-logo">
           <!-- replace with your logo -->
           <a href="index.php">
-            <img src="img/LOGO.webp" alt="UX Pacific" />
+            <img src="img/logo1.webp" alt="UX Pacific" />
           </a>
         </div>
         <!-- Desktop Menu -->
@@ -387,7 +387,7 @@ $related_html = getRelatedProducts($conn, $product);
       <div class="footer-main">
         <div class="footer-top">
           <div class="footer-brand">
-            <img src="img/LOGO.webp" alt="UX Pacific" />
+            <img src="img/logo1.webp" alt="UX Pacific" />
             <p>Design resources and merchandise trusted by creators worldwide.</p>
              <div class="footer-socials">
               <a href="https://dribbble.com/social-ux-pacific" target="_blank"><img src="img/bl.webp" alt="Dribbble" /></a>

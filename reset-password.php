@@ -26,7 +26,7 @@ $email = isset($_GET['email']) ? trim(strtolower($_GET['email'])) : '';
         <nav class="nav-bar">
           <div class="nav-logo">
             <a href="index.php">
-              <img src="img/LOGO.webp" alt="UX Pacific" />
+              <img src="img/logo1.webp" alt="UX Pacific" />
             </a>
           </div>
           <ul class="nav-links">

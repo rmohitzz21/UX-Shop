@@ -23,7 +23,7 @@
             <div class="nav-logo">
               <!-- replace with your logo -->
               <a href="index.php">
-                <img src="img/LOGO.webp" alt="UX Pacific" />
+                <img src="img/logo1.webp" alt="UX Pacific" />
               </a>
             </div>
 
@@ -234,7 +234,7 @@
         <div class="footer-main">
           <div class="footer-top">
             <div class="footer-brand">
-              <img src="img/LOGO.webp" alt="UX Pacific" />
+              <img src="img/logo1.webp" alt="UX Pacific" />
               <p>
                 Design resources and merchandise trusted by creators worldwide —
                 built to be used, worn, and valued.

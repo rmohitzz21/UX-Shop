@@ -14,7 +14,7 @@
     content="Explore premium UX/UI design resources including digital assets and physical products" />
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://uxpacific.com/" />
-  <meta property="og:image" content="https://uxpacific.com/img/LOGO.webp" />
+  <meta property="og:image" content="https://uxpacific.com/img/logo1.webp" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="csrf-token" content="<?php echo htmlspecialchars($_SESSION['csrf_token'] ?? ''); ?>" />
   <title>UX Pacific – Merchandise</title>
@@ -38,7 +38,7 @@
         <div class="nav-logo">
           <!-- replace with your logo -->
           <a href="index.php">
-            <img src="img/logo.webp" alt="UX Pacific" />
+            <img src="img/logo1.webp" alt="UX Pacific" />
           </a>
         </div>
 
@@ -531,7 +531,7 @@
       <div class="footer-main">
         <div class="footer-top">
           <div class="footer-brand">
-            <img src="img/LOGO.webp" alt="UX Pacific" />
+            <img src="img/logo1.webp" alt="UX Pacific" />
             <p>
               Design resources and merchandise trusted by creators worldwide —
               built to be used, worn, and valued.

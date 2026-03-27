@@ -104,3 +104,19 @@ Stack trace:
 #0 D:\xampp\htdocs\ux\Ux-Merchandise\api\address\add.php(109): mysqli_stmt->bind_param('isssssssssis', 50, 'Mohit', 'Rana', 'sakm, osoam, mo...', 'aaa', 'Ahmedabad', 'Gujarat', '380001', 'India', '+918238014262', 1, 'Office', 'both')
 #1 {main}
   thrown in D:\xampp\htdocs\ux\Ux-Merchandise\api\address\add.php on line 109
+[27-Mar-2026 18:55:16 Europe/Berlin] PHP Warning:  mysqli::__construct(): Error while reading greeting packet. PID=22012 in D:\xampp\htdocs\ux\Ux-Merchandise\includes\config.php on line 59
+[27-Mar-2026 18:55:16 Europe/Berlin] PHP Warning:  mysqli::__construct(): Error while reading greeting packet. PID=22012 in D:\xampp\htdocs\ux\Ux-Merchandise\includes\config.php on line 59
+[27-Mar-2026 18:55:16 Europe/Berlin] PHP Warning:  mysqli::__construct(): Error while reading greeting packet. PID=22012 in D:\xampp\htdocs\ux\Ux-Merchandise\includes\config.php on line 59
+[27-Mar-2026 18:55:16 Europe/Berlin] PHP Warning:  mysqli::__construct(): Error while reading greeting packet. PID=22012 in D:\xampp\htdocs\ux\Ux-Merchandise\includes\config.php on line 59
+[27-Mar-2026 18:55:16 Europe/Berlin] PHP Warning:  mysqli::__construct(): Error while reading greeting packet. PID=22012 in D:\xampp\htdocs\ux\Ux-Merchandise\includes\config.php on line 59
+[27-Mar-2026 18:55:16 Europe/Berlin] PHP Warning:  mysqli::__construct(): (HY000/2006): MySQL server has gone away in D:\xampp\htdocs\ux\Ux-Merchandise\includes\config.php on line 59
+[27-Mar-2026 18:55:16 Europe/Berlin] PHP Warning:  mysqli::__construct(): (HY000/2006): MySQL server has gone away in D:\xampp\htdocs\ux\Ux-Merchandise\includes\config.php on line 59
+[27-Mar-2026 18:55:16 Europe/Berlin] PHP Warning:  mysqli::__construct(): (HY000/2006): MySQL server has gone away in D:\xampp\htdocs\ux\Ux-Merchandise\includes\config.php on line 59
+[27-Mar-2026 18:55:16 Europe/Berlin] PHP Warning:  mysqli::__construct(): (HY000/2006): MySQL server has gone away in D:\xampp\htdocs\ux\Ux-Merchandise\includes\config.php on line 59
+[27-Mar-2026 18:55:16 Europe/Berlin] PHP Warning:  mysqli::__construct(): (HY000/2006): MySQL server has gone away in D:\xampp\htdocs\ux\Ux-Merchandise\includes\config.php on line 59
+[27-Mar-2026 18:55:16 Europe/Berlin] PHP Fatal error:  Maximum execution time of 120 seconds exceeded in D:\xampp\htdocs\ux\Ux-Merchandise\includes\config.php on line 59
+[27-Mar-2026 19:05:18 Europe/Berlin] PHP Warning:  mysqli::__construct(): (HY000/2002): No connection could be made because the target machine actively refused it in D:\xampp\htdocs\ux\Ux-Merchandise\includes\config.php on line 59
+[27-Mar-2026 19:05:31 Europe/Berlin] PHP Warning:  mysqli::__construct(): (HY000/2002): No connection could be made because the target machine actively refused it in D:\xampp\htdocs\ux\Ux-Merchandise\includes\config.php on line 59
+[27-Mar-2026 19:06:32 Europe/Berlin] PHP Warning:  mysqli::__construct(): (HY000/2002): No connection could be made because the target machine actively refused it in D:\xampp\htdocs\ux\Ux-Merchandise\includes\config.php on line 59
+[27-Mar-2026 19:06:59 Europe/Berlin] PHP Warning:  mysqli::__construct(): (HY000/2002): No connection could be made because the target machine actively refused it in D:\xampp\htdocs\ux\Ux-Merchandise\includes\config.php on line 59
+[27-Mar-2026 19:08:43 Europe/Berlin] PHP Warning:  mysqli::__construct(): (HY000/2002): No connection could be made because the target machine actively refused it in D:\xampp\htdocs\ux\Ux-Merchandise\includes\config.php on line 59
