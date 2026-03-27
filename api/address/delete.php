@@ -30,4 +30,5 @@ if ($stmt->affected_rows > 0) {
     echo json_encode(['status' => 'error', 'message' => 'Address not found']);
 }
 $stmt->close();
+$conn->close();
 ?>

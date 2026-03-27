@@ -2,15 +2,11 @@
 // api/cart/list.php
 header('Content-Type: application/json');
 require_once '../../includes/config.php';
+require_once '../../includes/helpers.php';
 
-// Check auth
-if (!isset($_SESSION['user_id'])) {
-    http_response_code(401);
-    echo json_encode(['status' => 'error', 'message' => 'Unauthorized']);
-    exit;
-}
+requireUserAuth();
 
-$user_id = intval($_SESSION['user_id']);
+$user_id = (int) $_SESSION['user_id'];
 
 $stmt = $conn->prepare("SELECT c.id, c.product_id, c.quantity, c.size, c.available_type,
         p.name, p.price, p.image, p.description, p.stock, p.available_type AS product_available_type
@@ -39,5 +35,5 @@ while ($row = $result->fetch_assoc()) {
 
 $stmt->close();
 $conn->close();
-echo json_encode(['status' => 'success', 'data' => $items]);
+sendResponse('success', 'Cart loaded', $items);
 ?>

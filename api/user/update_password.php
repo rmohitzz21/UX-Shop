@@ -1,13 +1,12 @@
 <?php
 header('Content-Type: application/json');
 require_once __DIR__ . '/../../includes/config.php';
+require_once __DIR__ . '/../../includes/helpers.php';
 
-// Check if user is logged in
-if (!isset($_SESSION['user_id'])) {
-    sendResponse("error", "Unauthorized", null, 401);
-}
+requireUserAuth();
+validateCsrf();
 
-$user_id = $_SESSION['user_id'];
+$user_id = (int) $_SESSION['user_id'];
 $input = json_decode(file_get_contents('php://input'), true);
 
 $currentPassword = $input['currentPassword'] ?? '';

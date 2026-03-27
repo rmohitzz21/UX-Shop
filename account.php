@@ -186,33 +186,57 @@
               <div class="account-tab" id="addresses-tab">
                 <div class="tab-header">
                   <h2 class="tab-title">Saved Addresses</h2>
+                  <button class="btn-primary" onclick="openAddAddressModal()">+ Add Address</button>
                 </div>
 
-                <button class="btn-primary small add-address-btn" onclick="showAddAddressForm()">Add Address</button>
-
-
-                <div id="addresses-list" class="addresses-list">
-                  <!-- Addresses will be loaded here -->
+                <div id="addresses-list" class="addresses-grid">
+                  <!-- Addresses will be loaded here by renderAccountAddresses() -->
                 </div>
+              </div>
 
-                <!-- Add Address Form (hidden by default) -->
-                <div id="add-address-form" class="address-form" style="display: none;">
-                  <h3>Add New Address</h3>
-                  <form id="new-address-form">
+              <!-- Address Modal (Add/Edit) -->
+              <div id="address-modal" class="modal" style="display: none;">
+                <div class="modal-overlay" onclick="closeAddressModal()"></div>
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <h3 id="address-modal-title">Add New Address</h3>
+                    <button class="modal-close" onclick="closeAddressModal()">&times;</button>
+                  </div>
+                  <form id="address-form" onsubmit="handleAddressFormSubmit(event)">
+                    <input type="hidden" id="address-id" name="id" />
+
                     <div class="form-row">
                       <div class="form-field">
                         <label>First Name *</label>
-                        <input type="text" name="firstName" required />
+                        <input type="text" name="firstName" required minlength="2" />
                       </div>
                       <div class="form-field">
                         <label>Last Name *</label>
-                        <input type="text" name="lastName" required />
+                        <input type="text" name="lastName" required minlength="2" />
                       </div>
                     </div>
+
+                    <div class="form-field">
+                      <label>Address Label</label>
+                      <select name="label" style="background-color: #050519; color: #fff;">
+                        <option value="">Select...</option>
+                        <option value="Home">Home</option>
+                        <option value="Work">Work</option>
+                        <option value="Office">Office</option>
+                        <option value="Other">Other</option>
+                      </select>
+                    </div>
+
                     <div class="form-field">
                       <label>Street Address *</label>
-                      <input type="text" name="address" required />
+                      <input type="text" name="address" required minlength="5" placeholder="House/Flat No., Building Name" />
                     </div>
+
+                    <div class="form-field">
+                      <label>Apartment, Suite, etc.</label>
+                      <input type="text" name="address2" placeholder="Optional" />
+                    </div>
+
                     <div class="form-row">
                       <div class="form-field">
                         <label>City *</label>
@@ -223,29 +247,39 @@
                         <input type="text" name="state" required />
                       </div>
                     </div>
+
                     <div class="form-row">
                       <div class="form-field">
                         <label>ZIP Code *</label>
-                        <input type="text" name="zip" required />
+                        <input type="text" name="zip" required minlength="4" />
                       </div>
-                      <div class="form-field" >
+                      <div class="form-field">
                         <label>Country *</label>
                         <select name="country" required style="background-color: #050519; color: #fff;">
-                          <option value="IN">India</option>
-                          <option value="US">United States</option>
-                          <option value="UK">United Kingdom</option>
-                          <option value="CA">Canada</option>
-                          <option value="AU">Australia</option>
+                          <option value="India">India</option>
+                          <option value="United States">United States</option>
+                          <option value="United Kingdom">United Kingdom</option>
+                          <option value="Canada">Canada</option>
+                          <option value="Australia">Australia</option>
                         </select>
                       </div>
                     </div>
+
                     <div class="form-field">
                       <label>Phone Number *</label>
-                      <input type="tel" name="phone" required />
+                      <input type="tel" name="phone" required placeholder="+91 xxxxx-xxxxx" />
                     </div>
-                    <div class="form-actions">
+
+                    <div class="form-field checkbox-field">
+                      <label class="checkbox-label">
+                        <input type="checkbox" name="isDefault" />
+                        <span class="checkbox-text">Set as default address</span>
+                      </label>
+                    </div>
+
+                    <div class="modal-actions">
+                      <button type="button" class="btn-ghost" onclick="closeAddressModal()">Cancel</button>
                       <button type="submit" class="btn-primary">Save Address</button>
-                      <button type="button" class="btn-ghost" onclick="hideAddAddressForm()">Cancel</button>
                     </div>
                   </form>
                 </div>
@@ -374,7 +408,12 @@
     // Account page functionality
     document.addEventListener('DOMContentLoaded', function () {
       loadUserProfile();
-      loadAddresses();
+      // Use the new address management function from script.js
+      if (typeof renderAccountAddresses === 'function') {
+        renderAccountAddresses();
+      } else {
+        loadAddressesLegacy();
+      }
       loadAccountOrders();
       setupTabNavigation();
       setupForms();
@@ -393,7 +432,7 @@
           if (data.status === 'success') {
               const user = data.data;
               const fullName = `${user.first_name} ${user.last_name}`;
-              
+
               document.getElementById('profile-name').textContent = fullName;
               document.getElementById('profile-email').textContent = user.email;
               document.getElementById('profile-initial').textContent = user.first_name.charAt(0).toUpperCase();
@@ -410,13 +449,22 @@
       .catch(error => console.error('Error loading profile:', error));
     }
 
-    function loadAddresses() {
+    // XSS Protection helper for legacy functions
+    function escapeHtml(str) {
+      if (str === null || str === undefined) return '';
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    // Legacy fallback for address loading if script.js functions not available
+    function loadAddressesLegacy() {
       const addressesList = document.getElementById('addresses-list');
 
       fetch('api/address/get.php')
       .then(res => {
           if (res.status === 401) {
-              // Optionally handle auth error
+              handleSessionExpiry();
               return { status: 'error', data: [] };
           }
           return res.json();
@@ -425,19 +473,55 @@
           if (data.status === 'success' && data.data && data.data.length > 0) {
               const addresses = data.data;
               addressesList.innerHTML = addresses.map((addr) => `
-                  <div class="address-card">
-                    <div class="address-header">
-                      <h4>${addr.first_name} ${addr.last_name}</h4>
-                      <button class="btn-ghost small" onclick="deleteAddress(${addr.id})">Delete</button>
+                  <div class="address-card-account" data-address-id="${parseInt(addr.id, 10)}">
+                    <div class="address-card-header">
+                      <div class="address-card-badges">
+                        ${addr.label ? `<span class="address-card-label">${escapeHtml(addr.label)}</span>` : ''}
+                        ${addr.is_default ? '<span class="address-card-default">Default</span>' : ''}
+                      </div>
+                      <div class="address-card-actions">
+                        <button class="btn-icon" onclick="editAddressModal(${parseInt(addr.id, 10)})" title="Edit">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                          </svg>
+                        </button>
+                        ${!addr.is_default ? `
+                          <button class="btn-icon" onclick="confirmSetDefault(${parseInt(addr.id, 10)})" title="Set as Default">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                              <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                            </svg>
+                          </button>
+                        ` : ''}
+                        <button class="btn-icon btn-danger" onclick="confirmDeleteAddress(${parseInt(addr.id, 10)})" title="Delete">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="3 6 5 6 21 6"></polyline>
+                            <path d="M19 6l-2 14H7L5 6"></path>
+                            <path d="M10 11v6"></path>
+                            <path d="M14 11v6"></path>
+                          </svg>
+                        </button>
+                      </div>
                     </div>
-                    <p>${addr.address_line1}</p>
-                    <p>${addr.city}, ${addr.state} ${addr.zip_code}</p>
-                    <p>${addr.country}</p>
-                    <p>Phone: ${addr.phone}</p>
+                    <div class="address-card-body">
+                      <h4>${escapeHtml(addr.first_name)} ${escapeHtml(addr.last_name)}</h4>
+                      <p>
+                        ${escapeHtml(addr.address_line1)}${addr.address_line2 ? '<br>' + escapeHtml(addr.address_line2) : ''}<br>
+                        ${escapeHtml(addr.city)}, ${escapeHtml(addr.state)} ${escapeHtml(addr.zip_code)}<br>
+                        ${escapeHtml(addr.country)}<br>
+                        <strong>Phone:</strong> ${escapeHtml(addr.phone)}
+                      </p>
+                    </div>
                   </div>
                 `).join('');
           } else {
-             addressesList.innerHTML = '<p class="empty-message">No saved addresses. Add one to get started.</p>';
+             addressesList.innerHTML = `
+               <div class="empty-state">
+                 <p>No saved addresses yet.</p>
+                 <p>Add an address to speed up your checkout process.</p>
+               </div>
+             `;
           }
       })
       .catch(err => {
@@ -521,7 +605,7 @@
       // Profile form
       document.getElementById('profile-form').addEventListener('submit', function (e) {
         e.preventDefault();
-        
+
         const formData = {
             firstName: this.firstName.value,
             lastName: this.lastName.value,
@@ -530,14 +614,17 @@
 
         fetch('api/user/update_profile.php', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+              'Content-Type': 'application/json',
+              'X-CSRF-Token': getCsrfToken()
+            },
             body: JSON.stringify(formData)
         })
         .then(response => response.json())
         .then(data => {
             if (data.status === 'success') {
                 showToast('Profile updated successfully!', 'success');
-                
+
                 // Update local storage to keep client-side UI in sync immediately
                 const userSession = JSON.parse(localStorage.getItem('userSession')) || {};
                 userSession.firstName = formData.firstName;
@@ -545,7 +632,7 @@
                 userSession.name = `${formData.firstName} ${formData.lastName}`;
                 userSession.phone = formData.phone;
                 localStorage.setItem('userSession', JSON.stringify(userSession));
-                
+
                 updateUserMenu();
                 loadUserProfile(); // Refresh from server to be sure
             } else {
@@ -558,88 +645,49 @@
         });
       });
 
-      // Password form
+      // Password form - actual API call
       document.getElementById('password-form').addEventListener('submit', function (e) {
         e.preventDefault();
-        if (this.newPassword.value !== this.confirmPassword.value) {
+
+        const currentPassword = this.currentPassword.value;
+        const newPassword = this.newPassword.value;
+        const confirmPassword = this.confirmPassword.value;
+
+        if (newPassword !== confirmPassword) {
           showToast('Passwords do not match', 'error');
           return;
         }
-        showToast('Password updated successfully!', 'success');
-        this.reset();
-      });
 
-      // New address form
-      document.getElementById('new-address-form').addEventListener('submit', function (e) {
-        e.preventDefault();
-        
-        // Get selected country text (e.g. "India") instead of value ("IN")
-        const countrySelect = this.country;
-        const countryName = countrySelect.options[countrySelect.selectedIndex].text;
+        if (newPassword.length < 8) {
+          showToast('Password must be at least 8 characters', 'error');
+          return;
+        }
 
-        const payload = {
-          firstName: this.firstName.value,
-          lastName: this.lastName.value,
-          address: this.address.value,
-          city: this.city.value,
-          state: this.state.value,
-          zip: this.zip.value,
-          country: countryName,
-          phone: this.phone.value
-        };
-
-        fetch('api/address/add.php', {
+        fetch('api/user/update_password.php', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCsrfToken() },
-            body: JSON.stringify(payload)
+            headers: {
+              'Content-Type': 'application/json',
+              'X-CSRF-Token': getCsrfToken()
+            },
+            body: JSON.stringify({
+              currentPassword: currentPassword,
+              newPassword: newPassword
+            })
         })
-        .then(res => res.json())
+        .then(response => response.json())
         .then(data => {
             if (data.status === 'success') {
-                loadAddresses();
-                hideAddAddressForm();
-                showToast('Address saved successfully!', 'success');
+              showToast('Password updated successfully!', 'success');
+              this.reset();
             } else {
-                showToast(data.message || 'Failed to save address', 'error');
+              showToast(data.message || 'Failed to update password', 'error');
             }
         })
-        .catch(err => {
-            console.error(err);
-            showToast('Error saving address', 'error');
+        .catch(error => {
+            console.error('Error updating password:', error);
+            showToast('Error updating password', 'error');
         });
       });
-    }
-
-    function showAddAddressForm() {
-      document.getElementById('add-address-form').style.display = 'block';
-    }
-
-    function hideAddAddressForm() {
-      document.getElementById('add-address-form').style.display = 'none';
-      document.getElementById('new-address-form').reset();
-    }
-
-    function deleteAddress(id) {
-      if (confirm('Are you sure you want to delete this address?')) {
-        fetch('api/address/delete.php', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCsrfToken() },
-            body: JSON.stringify({ id: id })
-        })
-        .then(res => res.json())
-        .then(data => {
-            if (data.status === 'success') {
-                loadAddresses();
-                showToast('Address deleted', 'success');
-            } else {
-                showToast(data.message || 'Failed to delete address', 'error');
-            }
-        })
-        .catch(err => {
-            console.error(err);
-            showToast('Error deleting address', 'error');
-        });
-      }
     }
 
     function resetProfileForm() {
@@ -652,22 +700,38 @@
 
     function deleteAccount() {
       if (confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
-        localStorage.removeItem('userSession');
-        localStorage.removeItem('cart');
-        localStorage.removeItem('orders');
-        showToast('Account deleted', 'success');
-        setTimeout(() => {
-          window.location.href = 'index.php';
-        }, 1500);
+        fetch('api/user/delete_account.php', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-CSRF-Token': getCsrfToken()
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+              localStorage.removeItem('userSession');
+              localStorage.removeItem('cart');
+              localStorage.removeItem('orders');
+              showToast('Account deleted successfully', 'success');
+              setTimeout(() => {
+                window.location.href = 'index.php';
+              }, 1500);
+            } else {
+              showToast(data.message || 'Failed to delete account', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error deleting account:', error);
+            showToast('Error deleting account', 'error');
+        });
       }
     }
 
-    window.showAddAddressForm = showAddAddressForm;
-    window.hideAddAddressForm = hideAddAddressForm;
-    window.deleteAddress = deleteAddress;
     window.resetProfileForm = resetProfileForm;
     window.saveNotificationSettings = saveNotificationSettings;
     window.deleteAccount = deleteAccount;
+    // Address functions are loaded from script.js: openAddAddressModal, editAddressModal, closeAddressModal, etc.
   </script>
 </body>
 

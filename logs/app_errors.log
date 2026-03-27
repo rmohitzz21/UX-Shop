@@ -27,3 +27,80 @@ Stack trace:
 [11-Mar-2026 13:54:25 Europe/Berlin] PHP Warning:  mysqli::__construct(): (HY000/2002): No connection could be made because the target machine actively refused it in D:\xampp\htdocs\ux\Ux-Merchandise\includes\config.php on line 59
 [11-Mar-2026 13:54:29 Europe/Berlin] PHP Warning:  mysqli::__construct(): (HY000/2002): No connection could be made because the target machine actively refused it in D:\xampp\htdocs\ux\Ux-Merchandise\includes\config.php on line 59
 [11-Mar-2026 13:54:37 Europe/Berlin] PHP Warning:  mysqli::__construct(): (HY000/2002): No connection could be made because the target machine actively refused it in D:\xampp\htdocs\ux\Ux-Merchandise\includes\config.php on line 59
+[26-Mar-2026 09:28:59 Europe/Berlin] PHP Fatal error:  Uncaught Error: Call to a member function bind_param() on bool in D:\xampp\htdocs\ux\Ux-Merchandise\api\address\add.php:109
+Stack trace:
+#0 {main}
+  thrown in D:\xampp\htdocs\ux\Ux-Merchandise\api\address\add.php on line 109
+[26-Mar-2026 09:29:08 Europe/Berlin] PHP Fatal error:  Uncaught Error: Call to a member function bind_param() on bool in D:\xampp\htdocs\ux\Ux-Merchandise\api\address\add.php:109
+Stack trace:
+#0 {main}
+  thrown in D:\xampp\htdocs\ux\Ux-Merchandise\api\address\add.php on line 109
+[26-Mar-2026 09:30:01 Europe/Berlin] PHP Fatal error:  Uncaught Error: Call to a member function bind_param() on bool in D:\xampp\htdocs\ux\Ux-Merchandise\api\address\add.php:109
+Stack trace:
+#0 {main}
+  thrown in D:\xampp\htdocs\ux\Ux-Merchandise\api\address\add.php on line 109
+[26-Mar-2026 09:30:16 Europe/Berlin] PHP Fatal error:  Uncaught Error: Call to a member function bind_param() on bool in D:\xampp\htdocs\ux\Ux-Merchandise\api\address\add.php:109
+Stack trace:
+#0 {main}
+  thrown in D:\xampp\htdocs\ux\Ux-Merchandise\api\address\add.php on line 109
+[26-Mar-2026 09:53:39 Europe/Berlin] PHP Fatal error:  Uncaught Error: Call to a member function bind_param() on bool in D:\xampp\htdocs\ux\Ux-Merchandise\api\address\add.php:109
+Stack trace:
+#0 {main}
+  thrown in D:\xampp\htdocs\ux\Ux-Merchandise\api\address\add.php on line 109
+[26-Mar-2026 09:54:07 Europe/Berlin] PHP Fatal error:  Uncaught Error: Call to a member function bind_param() on bool in D:\xampp\htdocs\ux\Ux-Merchandise\api\address\add.php:109
+Stack trace:
+#0 {main}
+  thrown in D:\xampp\htdocs\ux\Ux-Merchandise\api\address\add.php on line 109
+[26-Mar-2026 09:54:22 Europe/Berlin] PHP Fatal error:  Uncaught Error: Call to a member function bind_param() on bool in D:\xampp\htdocs\ux\Ux-Merchandise\api\address\add.php:109
+Stack trace:
+#0 {main}
+  thrown in D:\xampp\htdocs\ux\Ux-Merchandise\api\address\add.php on line 109
+[26-Mar-2026 09:54:22 Europe/Berlin] PHP Fatal error:  Uncaught Error: Call to a member function bind_param() on bool in D:\xampp\htdocs\ux\Ux-Merchandise\api\address\add.php:109
+Stack trace:
+#0 {main}
+  thrown in D:\xampp\htdocs\ux\Ux-Merchandise\api\address\add.php on line 109
+[26-Mar-2026 09:54:26 Europe/Berlin] PHP Fatal error:  Uncaught Error: Call to a member function bind_param() on bool in D:\xampp\htdocs\ux\Ux-Merchandise\api\address\add.php:109
+Stack trace:
+#0 {main}
+  thrown in D:\xampp\htdocs\ux\Ux-Merchandise\api\address\add.php on line 109
+[26-Mar-2026 10:20:17 Europe/Berlin] PHP Fatal error:  Uncaught Error: Call to a member function bind_param() on bool in D:\xampp\htdocs\ux\Ux-Merchandise\api\address\add.php:109
+Stack trace:
+#0 {main}
+  thrown in D:\xampp\htdocs\ux\Ux-Merchandise\api\address\add.php on line 109
+[26-Mar-2026 10:20:22 Europe/Berlin] PHP Fatal error:  Uncaught Error: Call to a member function bind_param() on bool in D:\xampp\htdocs\ux\Ux-Merchandise\api\address\add.php:109
+Stack trace:
+#0 {main}
+  thrown in D:\xampp\htdocs\ux\Ux-Merchandise\api\address\add.php on line 109
+[26-Mar-2026 10:20:28 Europe/Berlin] PHP Fatal error:  Uncaught Error: Call to a member function bind_param() on bool in D:\xampp\htdocs\ux\Ux-Merchandise\api\address\add.php:109
+Stack trace:
+#0 {main}
+  thrown in D:\xampp\htdocs\ux\Ux-Merchandise\api\address\add.php on line 109
+[26-Mar-2026 10:27:09 Europe/Berlin] PHP Fatal error:  Uncaught Error: Call to a member function bind_param() on bool in D:\xampp\htdocs\ux\Ux-Merchandise\api\address\add.php:109
+Stack trace:
+#0 {main}
+  thrown in D:\xampp\htdocs\ux\Ux-Merchandise\api\address\add.php on line 109
+[26-Mar-2026 10:46:21 Europe/Berlin] PHP Fatal error:  Uncaught ArgumentCountError: The number of elements in the type definition string must match the number of bind variables in D:\xampp\htdocs\ux\Ux-Merchandise\api\address\add.php:109
+Stack trace:
+#0 D:\xampp\htdocs\ux\Ux-Merchandise\api\address\add.php(109): mysqli_stmt->bind_param('isssssssssis', 50, 'Mohit', 'Rana', 'sakm, osoam, mo...', '', 'Ahmedabad', 'Gujarat', '380001', 'India', '+918238014262', 1, 'Home', 'both')
+#1 {main}
+  thrown in D:\xampp\htdocs\ux\Ux-Merchandise\api\address\add.php on line 109
+[26-Mar-2026 10:47:12 Europe/Berlin] PHP Fatal error:  Uncaught ArgumentCountError: The number of elements in the type definition string must match the number of bind variables in D:\xampp\htdocs\ux\Ux-Merchandise\api\address\add.php:109
+Stack trace:
+#0 D:\xampp\htdocs\ux\Ux-Merchandise\api\address\add.php(109): mysqli_stmt->bind_param('isssssssssis', 50, 'Mohit', 'Rana', 'sakm, osoam, mo...', '', 'Ahmedabad', 'Gujarat', '380001', 'India', '+918238014262', 1, 'Work', 'both')
+#1 {main}
+  thrown in D:\xampp\htdocs\ux\Ux-Merchandise\api\address\add.php on line 109
+[26-Mar-2026 10:49:07 Europe/Berlin] PHP Fatal error:  Uncaught ArgumentCountError: The number of elements in the type definition string must match the number of bind variables in D:\xampp\htdocs\ux\Ux-Merchandise\api\address\add.php:109
+Stack trace:
+#0 D:\xampp\htdocs\ux\Ux-Merchandise\api\address\add.php(109): mysqli_stmt->bind_param('isssssssssis', 50, 'Mohit', 'Rana', 'sakm, osoam, mo...', 'aaa', 'Ahmedabad', 'Gujarat', '380001', 'India', '+918238014262', 1, 'Office', 'both')
+#1 {main}
+  thrown in D:\xampp\htdocs\ux\Ux-Merchandise\api\address\add.php on line 109
+[26-Mar-2026 10:49:13 Europe/Berlin] PHP Fatal error:  Uncaught ArgumentCountError: The number of elements in the type definition string must match the number of bind variables in D:\xampp\htdocs\ux\Ux-Merchandise\api\address\add.php:109
+Stack trace:
+#0 D:\xampp\htdocs\ux\Ux-Merchandise\api\address\add.php(109): mysqli_stmt->bind_param('isssssssssis', 50, 'Mohit', 'Rana', 'sakm, osoam, mo...', 'aaa', 'Ahmedabad', 'Gujarat', '380001', 'India', '+918238014262', 1, 'Office', 'both')
+#1 {main}
+  thrown in D:\xampp\htdocs\ux\Ux-Merchandise\api\address\add.php on line 109
+[26-Mar-2026 10:49:16 Europe/Berlin] PHP Fatal error:  Uncaught ArgumentCountError: The number of elements in the type definition string must match the number of bind variables in D:\xampp\htdocs\ux\Ux-Merchandise\api\address\add.php:109
+Stack trace:
+#0 D:\xampp\htdocs\ux\Ux-Merchandise\api\address\add.php(109): mysqli_stmt->bind_param('isssssssssis', 50, 'Mohit', 'Rana', 'sakm, osoam, mo...', 'aaa', 'Ahmedabad', 'Gujarat', '380001', 'India', '+918238014262', 1, 'Office', 'both')
+#1 {main}
+  thrown in D:\xampp\htdocs\ux\Ux-Merchandise\api\address\add.php on line 109

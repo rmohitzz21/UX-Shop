@@ -29,6 +29,7 @@ if ($quantity <= 0) {
     $stmt->bind_param("iiss", $user_id, $product_id, $size, $available_type);
     $stmt->execute();
     $stmt->close();
+    $conn->close();
     echo json_encode(['status' => 'success', 'message' => 'Item removed from cart']);
     exit;
 }

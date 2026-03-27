@@ -136,10 +136,43 @@ try {
     }
 
     // 6. Create Order
+    // Handle savedAddressId - fetch from database if provided
+    $shipping_data = $data['shipping'];
+
+    if (!empty($data['savedAddressId'])) {
+        $savedAddrId = intval($data['savedAddressId']);
+
+        // Fetch saved address with ownership verification (IDOR prevention)
+        $addrStmt = $conn->prepare("SELECT * FROM addresses WHERE id = ? AND user_id = ?");
+        $addrStmt->bind_param("ii", $savedAddrId, $user_id);
+        $addrStmt->execute();
+        $savedAddr = $addrStmt->get_result()->fetch_assoc();
+        $addrStmt->close();
+
+        if (!$savedAddr) {
+            throw new Exception("Selected address not found or access denied");
+        }
+
+        // Build shipping data from saved address
+        // Map database columns to the JSON structure expected by the system
+        $shipping_data = [
+            'firstName' => $savedAddr['first_name'],
+            'lastName' => $savedAddr['last_name'],
+            'email' => $data['shipping']['email'] ?? '', // Email comes from form (not stored in address)
+            'phone' => $savedAddr['phone'],
+            'address' => $savedAddr['address_line1'],
+            'address2' => $savedAddr['address_line2'] ?? '',
+            'city' => $savedAddr['city'],
+            'state' => $savedAddr['state'],
+            'zip' => $savedAddr['zip_code'],
+            'country' => $savedAddr['country']
+        ];
+    }
+
     $order_number = 'UXP-' . date('Y') . '-' . str_pad(mt_rand(1, 999999), 6, '0', STR_PAD_LEFT);
     // COD → 'Pending'; card/UPI → 'awaiting_payment' (confirmed after Razorpay verify)
     $status = ($payment_method === 'cod') ? 'Pending' : 'awaiting_payment';
-    $shipping_address_json = json_encode($data['shipping']);
+    $shipping_address_json = json_encode($shipping_data);
     
     $stmt = $conn->prepare("INSERT INTO orders (order_number, user_id, total, subtotal, shipping, tax, payment_method, status, shipping_address, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())");
     $stmt->bind_param("siddddsss", 
@@ -193,32 +226,56 @@ try {
     if ($delete_cart) $delete_cart->close();
 
     // 8. Handle "Save Address" (Optional feature from checkout)
+    // FIXED: Use correct column names (address_line1, zip_code instead of address, zip)
     if (!empty($data['saveAddress']) && !empty($data['shipping'])) {
-         $ship = $data['shipping'];
-         // Simple validation ensuring not empty
-         if (!empty($ship['address'])) {
-             // Check if address APIs exist or table exists. Assuming 'addresses' table exists from previous context.
-             // We'll try to insert. If it fails (table missing), we catch exception? 
-             // Actually, we are in a transaction. If this fails, order fails. 
-             // Better to wrap in try-catch or ensure table exists. 
-             // Previously viewed code showed INSERT INTO addresses.
-             $saveAddrStmt = $conn->prepare("INSERT INTO addresses (user_id, first_name, last_name, address, city, state, zip, country, phone) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
-             if ($saveAddrStmt) {
-                 $saveAddrStmt->bind_param("issssssss", 
-                    $user_id, 
-                    $ship['firstName'], 
-                    $ship['lastName'], 
-                    $ship['address'], 
-                    $ship['city'], 
-                    $ship['state'], 
-                    $ship['zip'], 
-                    $ship['country'], 
-                    $ship['phone']
-                 );
-                 $saveAddrStmt->execute();
-                 $saveAddrStmt->close();
-             }
-         }
+        $ship = $data['shipping'];
+        // Validate that we have actual address data (not when using savedAddressId)
+        if (!empty($ship['address']) && empty($data['savedAddressId'])) {
+            // Check how many addresses user has (limit to 10)
+            $countStmt = $conn->prepare("SELECT COUNT(*) as cnt FROM addresses WHERE user_id = ?");
+            $countStmt->bind_param("i", $user_id);
+            $countStmt->execute();
+            $countRow = $countStmt->get_result()->fetch_assoc();
+            $countStmt->close();
+
+            if ($countRow['cnt'] < 10) {
+                // Check if this is user's first address (auto-set as default)
+                $isDefault = ($countRow['cnt'] == 0) ? 1 : 0;
+
+                // Sanitize inputs
+                $addrFirstName = htmlspecialchars(trim($ship['firstName'] ?? ''), ENT_QUOTES, 'UTF-8');
+                $addrLastName = htmlspecialchars(trim($ship['lastName'] ?? ''), ENT_QUOTES, 'UTF-8');
+                $addrLine1 = htmlspecialchars(trim($ship['address'] ?? ''), ENT_QUOTES, 'UTF-8');
+                $addrLine2 = htmlspecialchars(trim($ship['address2'] ?? ''), ENT_QUOTES, 'UTF-8');
+                $addrCity = htmlspecialchars(trim($ship['city'] ?? ''), ENT_QUOTES, 'UTF-8');
+                $addrState = htmlspecialchars(trim($ship['state'] ?? ''), ENT_QUOTES, 'UTF-8');
+                $addrZipCode = htmlspecialchars(trim($ship['zip'] ?? ''), ENT_QUOTES, 'UTF-8');
+                $addrCountry = htmlspecialchars(trim($ship['country'] ?? 'IN'), ENT_QUOTES, 'UTF-8');
+                $addrPhone = preg_replace('/[^\d+\-\s()]/', '', $ship['phone'] ?? '');
+
+                // FIXED: Use correct column names matching the addresses table schema
+                $saveAddrStmt = $conn->prepare("INSERT INTO addresses
+                    (user_id, first_name, last_name, address_line1, address_line2, city, state, zip_code, country, phone, is_default, label)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Checkout')");
+                if ($saveAddrStmt) {
+                    $saveAddrStmt->bind_param("issssssssis",
+                        $user_id,
+                        $addrFirstName,
+                        $addrLastName,
+                        $addrLine1,      // Maps to address_line1 (NOT address)
+                        $addrLine2,      // Maps to address_line2
+                        $addrCity,
+                        $addrState,
+                        $addrZipCode,    // Maps to zip_code (NOT zip)
+                        $addrCountry,
+                        $addrPhone,
+                        $isDefault
+                    );
+                    $saveAddrStmt->execute();
+                    $saveAddrStmt->close();
+                }
+            }
+        }
     }
     
     $conn->commit();

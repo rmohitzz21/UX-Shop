@@ -126,8 +126,21 @@
               <!-- Checkout Form -->
               <div class="checkout-form-wrapper">
                 <form class="checkout-form" id="checkout-form" onsubmit="handleCheckout(event)">
-                  <!-- Shipping Information -->
-                  <div class="checkout-block">
+                  <!-- Saved Addresses Selector (shown when user has saved addresses) -->
+                  <div id="saved-addresses-section" class="checkout-block" style="display: none;">
+                    <h2 class="block-title">Delivery Address</h2>
+
+                    <div id="saved-addresses-list" class="address-cards">
+                      <!-- Populated by JavaScript -->
+                    </div>
+
+                    <button type="button" id="use-new-address-btn" class="btn-outline btn-small" style="margin-top: 1rem;">
+                      + Use a Different Address
+                    </button>
+                  </div>
+
+                  <!-- Shipping Information (Manual Entry Form) -->
+                  <div id="new-address-section" class="checkout-block">
                     <h2 class="block-title">Shipping Information</h2>
 
                     <!-- Digital delivery info (shown when cart has digital items) -->
@@ -195,7 +208,7 @@
                           name="address"
                           type="text"
                           placeholder="House/Flat No., Building Name"
-                          
+                          required
                         />
                       </div>
 
@@ -206,7 +219,7 @@
                             id="city"
                             name="city"
                             type="text"
-                           
+                            required
                           />
                         </div>
                         <div class="form-field">
@@ -215,7 +228,7 @@
                             id="state"
                             name="state"
                             type="text"
-                           
+                            required
                           />
                         </div>
                       </div>
@@ -228,7 +241,7 @@
                             name="zip"
                             type="text"
                             pattern="[\d]+"
-                            
+                            required
                           />
                         </div>
                         <div class="form-field">
@@ -242,6 +255,29 @@
                           </select>
                         </div>
                       </div>
+                    </div>
+
+                    <!-- Save address checkbox -->
+                    <div id="save-address-row" class="form-field checkbox-field" style="margin-top: 1rem;">
+                      <label class="checkbox-label">
+                        <input type="checkbox" id="save-address-checkbox" name="saveAddress" />
+                        <span class="checkbox-text">Save this address for future orders</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  <!-- Email field (always shown, needed for order confirmation) -->
+                  <div id="email-only-section" class="checkout-block" style="display: none;">
+                    <h2 class="block-title">Contact Information</h2>
+                    <div class="form-field">
+                      <label for="email-saved">Email Address *</label>
+                      <input
+                        id="email-saved"
+                        name="emailSaved"
+                        type="email"
+                        autocomplete="email"
+                        placeholder="For order confirmation & updates"
+                      />
                     </div>
                   </div>
 

@@ -1227,12 +1227,16 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     loadCheckoutPage();
-    
+
+    // Initialize address selection
+    initCheckoutAddresses();
+
     // Handle payment method change
     document.querySelectorAll('input[name="paymentMethod"]').forEach(radio => {
       radio.addEventListener('change', function() {
         const cardDetails = document.getElementById('card-details');
-        if (this.value === 'card') {
+        // Show Razorpay info for both card and UPI (both use Razorpay gateway)
+        if (this.value === 'card' || this.value === 'upi') {
           cardDetails.style.display = 'block';
         } else {
           cardDetails.style.display = 'none';
@@ -1782,53 +1786,71 @@ function handleCheckout(event) {
   const country = form.country?.value;
   const paymentMethod = form.paymentMethod?.value;
 
-  if (!firstName || firstName.length < 2) {
-    if (form.firstName) showFieldError(form.firstName, 'First name must be at least 2 characters');
-    isValid = false;
-  } else if (form.firstName) clearFieldError(form.firstName);
+  // Check if user is using a saved address
+  const usingSavedAddressForValidation = isUsingSavedAddress();
 
-  if (!lastName || lastName.length < 2) {
-    if (form.lastName) showFieldError(form.lastName, 'Last name must be at least 2 characters');
-    isValid = false;
-  } else if (form.lastName) clearFieldError(form.lastName);
-
-  if (!email) {
-    if (form.email) showFieldError(form.email, 'Email is required');
-    isValid = false;
-  } else if (!validateEmail(email)) {
-    if (form.email) showFieldError(form.email, 'Please enter a valid email address');
-    isValid = false;
-  } else if (form.email) clearFieldError(form.email);
-
-  if (!phone) {
-    if (form.phone) showFieldError(form.phone, 'Phone number is required');
-    isValid = false;
-  } else if (!validatePhone(phone)) {
-    if (form.phone) showFieldError(form.phone, 'Please enter a valid phone number');
-    isValid = false;
-  } else if (form.phone) clearFieldError(form.phone);
-
-  // Address validation — only required when cart has physical items
-  if (!onlyDigitalInCart) {
-    if (!address || address.length < 5) {
-      if (form.address) showFieldError(form.address, 'Please enter a valid address');
+  // When using saved address, only validate email
+  if (usingSavedAddressForValidation) {
+    const savedEmail = document.getElementById('email-saved')?.value.trim();
+    if (!savedEmail) {
+      showFieldError(document.getElementById('email-saved'), 'Email is required');
       isValid = false;
-    } else if (form.address) clearFieldError(form.address);
-
-    if (!city || city.length < 2) {
-      if (form.city) showFieldError(form.city, 'City is required');
+    } else if (!validateEmail(savedEmail)) {
+      showFieldError(document.getElementById('email-saved'), 'Please enter a valid email address');
       isValid = false;
-    } else if (form.city) clearFieldError(form.city);
-
-    if (!state || state.length < 2) {
-      if (form.state) showFieldError(form.state, 'State is required');
+    } else {
+      clearFieldError(document.getElementById('email-saved'));
+    }
+  } else {
+    // Manual address entry - validate all fields
+    if (!firstName || firstName.length < 2) {
+      if (form.firstName) showFieldError(form.firstName, 'First name must be at least 2 characters');
       isValid = false;
-    } else if (form.state) clearFieldError(form.state);
+    } else if (form.firstName) clearFieldError(form.firstName);
 
-    if (!zip || zip.length < 4) {
-      if (form.zip) showFieldError(form.zip, 'Please enter a valid ZIP code');
+    if (!lastName || lastName.length < 2) {
+      if (form.lastName) showFieldError(form.lastName, 'Last name must be at least 2 characters');
       isValid = false;
-    } else if (form.zip) clearFieldError(form.zip);
+    } else if (form.lastName) clearFieldError(form.lastName);
+
+    if (!email) {
+      if (form.email) showFieldError(form.email, 'Email is required');
+      isValid = false;
+    } else if (!validateEmail(email)) {
+      if (form.email) showFieldError(form.email, 'Please enter a valid email address');
+      isValid = false;
+    } else if (form.email) clearFieldError(form.email);
+
+    if (!phone) {
+      if (form.phone) showFieldError(form.phone, 'Phone number is required');
+      isValid = false;
+    } else if (!validatePhone(phone)) {
+      if (form.phone) showFieldError(form.phone, 'Please enter a valid phone number');
+      isValid = false;
+    } else if (form.phone) clearFieldError(form.phone);
+
+    // Address validation — only required when cart has physical items
+    if (!onlyDigitalInCart) {
+      if (!address || address.length < 5) {
+        if (form.address) showFieldError(form.address, 'Please enter a valid address');
+        isValid = false;
+      } else if (form.address) clearFieldError(form.address);
+
+      if (!city || city.length < 2) {
+        if (form.city) showFieldError(form.city, 'City is required');
+        isValid = false;
+      } else if (form.city) clearFieldError(form.city);
+
+      if (!state || state.length < 2) {
+        if (form.state) showFieldError(form.state, 'State is required');
+        isValid = false;
+      } else if (form.state) clearFieldError(form.state);
+
+      if (!zip || zip.length < 4) {
+        if (form.zip) showFieldError(form.zip, 'Please enter a valid ZIP code');
+        isValid = false;
+      } else if (form.zip) clearFieldError(form.zip);
+    }
   }
   
   // Card/UPI payment is handled by Razorpay modal — no client-side card field validation needed
@@ -1851,6 +1873,14 @@ function handleCheckout(event) {
   // Get User ID
   const userId = userSession ? userSession.id : 0;
 
+  // Check if using saved address
+  const usingSavedAddress = isUsingSavedAddress();
+  const savedAddressId = usingSavedAddress ? getSelectedAddressId() : null;
+
+  // Get email - either from saved email field or main email field
+  const emailField = usingSavedAddress ? document.getElementById('email-saved') : form.email;
+  const orderEmail = emailField?.value || form.email?.value || '';
+
   // Prepare Order Data
   const orderPayload = {
     userId: userId,
@@ -1868,10 +1898,15 @@ function handleCheckout(event) {
     shipping_cost: shippingCost,
     tax: tax,
     paymentMethod: form.paymentMethod?.value || 'card',
-    shipping: {
+    savedAddressId: savedAddressId,
+    saveAddress: document.getElementById('save-address-checkbox')?.checked || false,
+    shipping: usingSavedAddress ? {
+      // When using saved address, only send email (address fetched from DB)
+      email: orderEmail
+    } : {
       firstName: form.firstName?.value || '',
       lastName: form.lastName?.value || '',
-      email: form.email?.value || '',
+      email: orderEmail,
       phone: form.phone?.value || '',
       address: onlyDigitalInCart ? '' : (form.address?.value || ''),
       city: onlyDigitalInCart ? '' : (form.city?.value || ''),
@@ -2406,6 +2441,535 @@ window.handleSignUp = handleSignUp;
 window.handleForgotPassword = handleForgotPassword;
 window.handleContactSubmit = handleContactSubmit;
 window.handleCheckout = handleCheckout;
+
+// ==================== ADDRESS MANAGEMENT FUNCTIONS ====================
+
+/**
+ * Fetch user's saved addresses from API
+ */
+async function fetchSavedAddresses() {
+  try {
+    const csrfToken = getCsrfToken();
+    const response = await fetch('api/address/get.php', {
+      headers: { 'X-CSRF-Token': csrfToken }
+    });
+    const result = await response.json();
+
+    if (result.status === 'success') {
+      return result.data || [];
+    }
+    console.error('Failed to fetch addresses:', result.message);
+    return [];
+  } catch (error) {
+    console.error('Error fetching addresses:', error);
+    return [];
+  }
+}
+
+/**
+ * Render address selection cards at checkout
+ */
+function renderAddressSelector(addresses) {
+  const container = document.getElementById('saved-addresses-list');
+  const savedSection = document.getElementById('saved-addresses-section');
+  const newAddressSection = document.getElementById('new-address-section');
+  const emailOnlySection = document.getElementById('email-only-section');
+  const saveAddressRow = document.getElementById('save-address-row');
+
+  if (!container || !savedSection) return;
+
+  if (addresses.length === 0) {
+    // No saved addresses - show manual form
+    savedSection.style.display = 'none';
+    if (newAddressSection) newAddressSection.style.display = 'block';
+    if (emailOnlySection) emailOnlySection.style.display = 'none';
+    return;
+  }
+
+  // Has saved addresses - show selector
+  savedSection.style.display = 'block';
+  if (newAddressSection) newAddressSection.style.display = 'none';
+  if (emailOnlySection) emailOnlySection.style.display = 'block';
+  if (saveAddressRow) saveAddressRow.style.display = 'none';
+
+  container.innerHTML = addresses.map((addr, index) => `
+    <label class="address-card ${addr.is_default ? 'selected' : ''}" data-address-id="${addr.id}">
+      <input type="radio" name="savedAddressId" value="${addr.id}"
+             ${addr.is_default ? 'checked' : ''} />
+      <div class="address-card-content">
+        <div class="address-card-info">
+          <h4>
+            ${esc(addr.first_name)} ${esc(addr.last_name)}
+            ${addr.label ? `<span class="address-card-label">${esc(addr.label)}</span>` : ''}
+            ${addr.is_default ? '<span class="address-card-default">Default</span>' : ''}
+          </h4>
+          <p>
+            ${esc(addr.address_line1)}${addr.address_line2 ? ', ' + esc(addr.address_line2) : ''}<br>
+            ${esc(addr.city)}, ${esc(addr.state)} ${esc(addr.zip_code)}<br>
+            ${esc(addr.country)} &bull; ${esc(addr.phone)}
+          </p>
+        </div>
+      </div>
+    </label>
+  `).join('');
+
+  // Add click handlers for visual selection
+  container.querySelectorAll('.address-card').forEach(card => {
+    card.addEventListener('click', function() {
+      container.querySelectorAll('.address-card').forEach(c => c.classList.remove('selected'));
+      this.classList.add('selected');
+    });
+  });
+
+  // Pre-fill email field with user's email from session
+  const userSession = getUserSession();
+  if (userSession && userSession.email) {
+    const emailSavedField = document.getElementById('email-saved');
+    if (emailSavedField && !emailSavedField.value) {
+      emailSavedField.value = userSession.email;
+    }
+  }
+}
+
+/**
+ * Setup toggle between saved addresses and new address form
+ */
+function setupAddressFormToggle() {
+  const toggleBtn = document.getElementById('use-new-address-btn');
+  const newAddressSection = document.getElementById('new-address-section');
+  const savedSection = document.getElementById('saved-addresses-section');
+  const emailOnlySection = document.getElementById('email-only-section');
+  const saveAddressRow = document.getElementById('save-address-row');
+
+  if (!toggleBtn) return;
+
+  let showingNewForm = false;
+
+  toggleBtn.addEventListener('click', function() {
+    showingNewForm = !showingNewForm;
+
+    if (showingNewForm) {
+      // Show new address form
+      if (newAddressSection) newAddressSection.style.display = 'block';
+      if (emailOnlySection) emailOnlySection.style.display = 'none';
+      if (saveAddressRow) saveAddressRow.style.display = 'block';
+      toggleBtn.textContent = '← Use Saved Address';
+
+      // Uncheck any selected saved address
+      document.querySelectorAll('input[name="savedAddressId"]').forEach(r => r.checked = false);
+      document.querySelectorAll('.address-card').forEach(c => c.classList.remove('selected'));
+    } else {
+      // Show saved addresses
+      if (newAddressSection) newAddressSection.style.display = 'none';
+      if (emailOnlySection) emailOnlySection.style.display = 'block';
+      if (saveAddressRow) saveAddressRow.style.display = 'none';
+      toggleBtn.textContent = '+ Use a Different Address';
+
+      // Re-select default address
+      const defaultRadio = document.querySelector('.address-card.selected input[name="savedAddressId"]');
+      if (defaultRadio) {
+        defaultRadio.checked = true;
+      } else {
+        // Select first address if no default
+        const firstRadio = document.querySelector('input[name="savedAddressId"]');
+        if (firstRadio) {
+          firstRadio.checked = true;
+          firstRadio.closest('.address-card').classList.add('selected');
+        }
+      }
+    }
+  });
+}
+
+/**
+ * Pre-fill checkout contact fields from address
+ */
+function prefillCheckoutContact(addr) {
+  const form = document.getElementById('checkout-form');
+  if (!form || !addr) return;
+
+  // Only prefill if fields are empty
+  const firstName = form.querySelector('[name="firstName"]');
+  const lastName = form.querySelector('[name="lastName"]');
+  const phone = form.querySelector('[name="phone"]');
+
+  if (firstName && !firstName.value) firstName.value = addr.first_name || '';
+  if (lastName && !lastName.value) lastName.value = addr.last_name || '';
+  if (phone && !phone.value) phone.value = addr.phone || '';
+}
+
+/**
+ * Initialize address selection at checkout
+ */
+async function initCheckoutAddresses() {
+  const userSession = getUserSession();
+  if (!userSession || !userSession.id) return;
+
+  const addresses = await fetchSavedAddresses();
+
+  if (addresses.length > 0) {
+    renderAddressSelector(addresses);
+    setupAddressFormToggle();
+
+    // Pre-fill contact info from default address
+    const defaultAddr = addresses.find(a => a.is_default) || addresses[0];
+    if (defaultAddr) {
+      prefillCheckoutContact(defaultAddr);
+    }
+  }
+}
+
+/**
+ * Check if using saved address at checkout
+ */
+function isUsingSavedAddress() {
+  const savedSection = document.getElementById('saved-addresses-section');
+  const newAddressSection = document.getElementById('new-address-section');
+
+  if (!savedSection || savedSection.style.display === 'none') return false;
+  if (newAddressSection && newAddressSection.style.display !== 'none') return false;
+
+  const selectedRadio = document.querySelector('input[name="savedAddressId"]:checked');
+  return selectedRadio !== null;
+}
+
+/**
+ * Get selected saved address ID
+ */
+function getSelectedAddressId() {
+  const selectedRadio = document.querySelector('input[name="savedAddressId"]:checked');
+  return selectedRadio ? parseInt(selectedRadio.value) : null;
+}
+
+// ==================== ADDRESS CRUD FOR ACCOUNT PAGE ====================
+
+/**
+ * Add new address via API
+ */
+async function addAddress(addressData) {
+  const csrfToken = getCsrfToken();
+  try {
+    const response = await fetch('api/address/add.php', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': csrfToken
+      },
+      body: JSON.stringify(addressData)
+    });
+    const result = await response.json();
+
+    if (result.status === 'success') {
+      showToast('Address added successfully', 'success');
+      return result.data;
+    } else {
+      showToast(result.message || 'Failed to add address', 'error');
+      return null;
+    }
+  } catch (error) {
+    console.error('Error adding address:', error);
+    showToast('Failed to add address', 'error');
+    return null;
+  }
+}
+
+/**
+ * Update address via API
+ */
+async function updateAddress(addressData) {
+  const csrfToken = getCsrfToken();
+  try {
+    const response = await fetch('api/address/update.php', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': csrfToken
+      },
+      body: JSON.stringify(addressData)
+    });
+    const result = await response.json();
+
+    if (result.status === 'success') {
+      showToast('Address updated successfully', 'success');
+      return true;
+    } else {
+      showToast(result.message || 'Failed to update address', 'error');
+      return false;
+    }
+  } catch (error) {
+    console.error('Error updating address:', error);
+    showToast('Failed to update address', 'error');
+    return false;
+  }
+}
+
+/**
+ * Delete address via API
+ */
+async function deleteAddress(addressId) {
+  const csrfToken = getCsrfToken();
+  try {
+    const response = await fetch('api/address/delete.php', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': csrfToken
+      },
+      body: JSON.stringify({ id: addressId })
+    });
+    const result = await response.json();
+
+    if (result.status === 'success') {
+      showToast('Address deleted successfully', 'success');
+      return true;
+    } else {
+      showToast(result.message || 'Failed to delete address', 'error');
+      return false;
+    }
+  } catch (error) {
+    console.error('Error deleting address:', error);
+    showToast('Failed to delete address', 'error');
+    return false;
+  }
+}
+
+/**
+ * Set address as default via API
+ */
+async function setDefaultAddress(addressId) {
+  const csrfToken = getCsrfToken();
+  try {
+    const response = await fetch('api/address/set-default.php', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': csrfToken
+      },
+      body: JSON.stringify({ id: addressId })
+    });
+    const result = await response.json();
+
+    if (result.status === 'success') {
+      showToast('Default address updated', 'success');
+      return true;
+    } else {
+      showToast(result.message || 'Failed to set default address', 'error');
+      return false;
+    }
+  } catch (error) {
+    console.error('Error setting default address:', error);
+    showToast('Failed to set default address', 'error');
+    return false;
+  }
+}
+
+/**
+ * Render addresses list in account page
+ */
+async function renderAccountAddresses() {
+  const container = document.getElementById('addresses-list');
+  if (!container) return;
+
+  container.innerHTML = '<div class="loading-spinner">Loading addresses...</div>';
+
+  const addresses = await fetchSavedAddresses();
+
+  if (addresses.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <p>No saved addresses yet.</p>
+        <p>Add an address to speed up your checkout process.</p>
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = addresses.map(addr => `
+    <div class="address-card-account" data-address-id="${addr.id}">
+      <div class="address-card-header">
+        <div class="address-card-badges">
+          ${addr.label ? `<span class="address-card-label">${esc(addr.label)}</span>` : ''}
+          ${addr.is_default ? '<span class="address-card-default">Default</span>' : ''}
+        </div>
+        <div class="address-card-actions">
+          <button class="btn-icon" onclick="editAddressModal(${addr.id})" title="Edit">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+            </svg>
+          </button>
+          ${!addr.is_default ? `
+            <button class="btn-icon" onclick="confirmSetDefault(${addr.id})" title="Set as Default">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                <polyline points="22 4 12 14.01 9 11.01"></polyline>
+              </svg>
+            </button>
+          ` : ''}
+          <button class="btn-icon btn-danger" onclick="confirmDeleteAddress(${addr.id})" title="Delete">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="3 6 5 6 21 6"></polyline>
+              <path d="M19 6l-2 14H7L5 6"></path>
+              <path d="M10 11v6"></path>
+              <path d="M14 11v6"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+      <div class="address-card-body">
+        <h4>${esc(addr.first_name)} ${esc(addr.last_name)}</h4>
+        <p>
+          ${esc(addr.address_line1)}${addr.address_line2 ? '<br>' + esc(addr.address_line2) : ''}<br>
+          ${esc(addr.city)}, ${esc(addr.state)} ${esc(addr.zip_code)}<br>
+          ${esc(addr.country)}<br>
+          <strong>Phone:</strong> ${esc(addr.phone)}
+        </p>
+      </div>
+    </div>
+  `).join('');
+}
+
+/**
+ * Open add address modal
+ */
+function openAddAddressModal() {
+  const modal = document.getElementById('address-modal');
+  const form = document.getElementById('address-form');
+  const title = document.getElementById('address-modal-title');
+
+  if (!modal || !form) return;
+
+  // Reset form
+  form.reset();
+  document.getElementById('address-id').value = '';
+  if (title) title.textContent = 'Add New Address';
+
+  modal.style.display = 'flex';
+}
+
+/**
+ * Open edit address modal with data
+ */
+async function editAddressModal(addressId) {
+  const modal = document.getElementById('address-modal');
+  const form = document.getElementById('address-form');
+  const title = document.getElementById('address-modal-title');
+
+  if (!modal || !form) return;
+
+  // Fetch address data
+  const addresses = await fetchSavedAddresses();
+  const addr = addresses.find(a => a.id === addressId);
+
+  if (!addr) {
+    showToast('Address not found', 'error');
+    return;
+  }
+
+  // Populate form
+  document.getElementById('address-id').value = addr.id;
+  form.firstName.value = addr.first_name;
+  form.lastName.value = addr.last_name;
+  form.address.value = addr.address_line1;
+  if (form.address2) form.address2.value = addr.address_line2 || '';
+  form.city.value = addr.city;
+  form.state.value = addr.state;
+  form.zip.value = addr.zip_code;
+  form.country.value = addr.country;
+  form.phone.value = addr.phone;
+  if (form.label) form.label.value = addr.label || '';
+  if (form.isDefault) form.isDefault.checked = addr.is_default;
+
+  if (title) title.textContent = 'Edit Address';
+
+  modal.style.display = 'flex';
+}
+
+/**
+ * Close address modal
+ */
+function closeAddressModal() {
+  const modal = document.getElementById('address-modal');
+  if (modal) modal.style.display = 'none';
+}
+
+/**
+ * Handle address form submit
+ */
+async function handleAddressFormSubmit(event) {
+  event.preventDefault();
+  const form = event.target;
+  const addressId = document.getElementById('address-id').value;
+
+  const addressData = {
+    firstName: form.firstName.value.trim(),
+    lastName: form.lastName.value.trim(),
+    address: form.address.value.trim(),
+    address2: form.address2?.value.trim() || '',
+    city: form.city.value.trim(),
+    state: form.state.value.trim(),
+    zip: form.zip.value.trim(),
+    country: form.country.value,
+    phone: form.phone.value.trim(),
+    label: form.label?.value || null,
+    isDefault: form.isDefault?.checked || false
+  };
+
+  let success;
+  if (addressId) {
+    // Update existing
+    addressData.id = parseInt(addressId);
+    success = await updateAddress(addressData);
+  } else {
+    // Add new
+    success = await addAddress(addressData);
+  }
+
+  if (success) {
+    closeAddressModal();
+    renderAccountAddresses();
+  }
+}
+
+/**
+ * Confirm and delete address
+ */
+async function confirmDeleteAddress(addressId) {
+  if (!confirm('Are you sure you want to delete this address?')) return;
+
+  const success = await deleteAddress(addressId);
+  if (success) {
+    renderAccountAddresses();
+  }
+}
+
+/**
+ * Confirm and set default address
+ */
+async function confirmSetDefault(addressId) {
+  const success = await setDefaultAddress(addressId);
+  if (success) {
+    renderAccountAddresses();
+  }
+}
+
+// Export address functions
+window.fetchSavedAddresses = fetchSavedAddresses;
+window.renderAddressSelector = renderAddressSelector;
+window.initCheckoutAddresses = initCheckoutAddresses;
+window.isUsingSavedAddress = isUsingSavedAddress;
+window.getSelectedAddressId = getSelectedAddressId;
+window.addAddress = addAddress;
+window.updateAddress = updateAddress;
+window.deleteAddress = deleteAddress;
+window.setDefaultAddress = setDefaultAddress;
+window.renderAccountAddresses = renderAccountAddresses;
+window.openAddAddressModal = openAddAddressModal;
+window.editAddressModal = editAddressModal;
+window.closeAddressModal = closeAddressModal;
+window.handleAddressFormSubmit = handleAddressFormSubmit;
+window.confirmDeleteAddress = confirmDeleteAddress;
+window.confirmSetDefault = confirmSetDefault;
 
 // ==================== WISHLIST FUNCTIONALITY ====================
 

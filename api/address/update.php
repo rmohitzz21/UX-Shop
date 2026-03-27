@@ -1,9 +1,9 @@
 <?php
 /**
- * api/address/add.php
- * Add a new address for the authenticated user
+ * api/address/update.php
+ * Update an existing address
  *
- * Required: firstName, lastName, address, city, state, zip, country, phone
+ * Required: id, firstName, lastName, address, city, state, zip, country, phone
  * Optional: address2, label, addressType, isDefault
  */
 header('Content-Type: application/json');
@@ -23,6 +23,12 @@ if (!$data) {
 }
 
 // Validate required fields
+if (empty($data['id'])) {
+    http_response_code(400);
+    echo json_encode(['status' => 'error', 'message' => 'Address ID is required']);
+    exit;
+}
+
 $required = ['firstName', 'lastName', 'address', 'city', 'state', 'zip', 'country', 'phone'];
 foreach ($required as $field) {
     if (empty($data[$field])) {
@@ -33,17 +39,18 @@ foreach ($required as $field) {
 }
 
 $user_id = intval($_SESSION['user_id']);
+$address_id = intval($data['id']);
 
-// Check address limit (max 10 addresses per user)
-$countStmt = $conn->prepare("SELECT COUNT(*) as cnt FROM addresses WHERE user_id = ?");
-$countStmt->bind_param("i", $user_id);
-$countStmt->execute();
-$count_row = $countStmt->get_result()->fetch_assoc();
-$countStmt->close();
+// IDOR Prevention: Verify ownership before update
+$verifyStmt = $conn->prepare("SELECT id FROM addresses WHERE id = ? AND user_id = ?");
+$verifyStmt->bind_param("ii", $address_id, $user_id);
+$verifyStmt->execute();
+$existing = $verifyStmt->get_result()->fetch_assoc();
+$verifyStmt->close();
 
-if ($count_row['cnt'] >= 10) {
-    http_response_code(400);
-    echo json_encode(['status' => 'error', 'message' => 'Maximum 10 addresses allowed. Please delete an existing address first.']);
+if (!$existing) {
+    http_response_code(403);
+    echo json_encode(['status' => 'error', 'message' => 'Address not found or access denied']);
     exit;
 }
 
@@ -57,13 +64,10 @@ $state = htmlspecialchars(trim($data['state']), ENT_QUOTES, 'UTF-8');
 $zip_code = htmlspecialchars(trim($data['zip']), ENT_QUOTES, 'UTF-8');
 $country = htmlspecialchars(trim($data['country']), ENT_QUOTES, 'UTF-8');
 $phone = preg_replace('/[^\d+\-\s()]/', '', $data['phone']);
-
-// New optional fields: label and addressType
 $label = isset($data['label']) ? htmlspecialchars(trim($data['label']), ENT_QUOTES, 'UTF-8') : null;
 $address_type = isset($data['addressType']) && in_array($data['addressType'], ['shipping', 'billing', 'both'])
     ? $data['addressType']
     : 'both';
-
 $is_default = isset($data['isDefault']) && $data['isDefault'] ? 1 : 0;
 
 // Input length validation
@@ -85,29 +89,35 @@ if (strlen($zip_code) < 4 || strlen($zip_code) > 20) {
     exit;
 }
 
-// If this is the first address, make it default
-if ($is_default == 0 && $count_row['cnt'] == 0) {
-    $is_default = 1;
-}
-
-// Start transaction
+// Start transaction for default handling
 $conn->begin_transaction();
 
 try {
     // If setting as default, unset previous default
     if ($is_default) {
-        $unsetStmt = $conn->prepare("UPDATE addresses SET is_default = 0 WHERE user_id = ?");
-        $unsetStmt->bind_param("i", $user_id);
+        $unsetStmt = $conn->prepare("UPDATE addresses SET is_default = 0 WHERE user_id = ? AND id != ?");
+        $unsetStmt->bind_param("ii", $user_id, $address_id);
         $unsetStmt->execute();
         $unsetStmt->close();
     }
 
-    // Try INSERT with new columns first, fallback to basic columns if they don't exist
-    $stmt = $conn->prepare("INSERT INTO addresses
-        (user_id, first_name, last_name, address_line1, address_line2, city, state, zip_code, country, phone, is_default)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-    $stmt->bind_param("issssssssis",
-        $user_id,
+    // Build update query - basic columns only (no label/address_type to ensure compatibility)
+    $sql = "UPDATE addresses SET
+        first_name = ?,
+        last_name = ?,
+        address_line1 = ?,
+        address_line2 = ?,
+        city = ?,
+        state = ?,
+        zip_code = ?,
+        country = ?,
+        phone = ?,
+        is_default = ?,
+        updated_at = NOW()
+        WHERE id = ? AND user_id = ?";
+
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("sssssssssiii",
         $first_name,
         $last_name,
         $address_line1,
@@ -117,19 +127,19 @@ try {
         $zip_code,
         $country,
         $phone,
-        $is_default
+        $is_default,
+        $address_id,
+        $user_id
     );
 
     if ($stmt->execute()) {
-        $new_id = $conn->insert_id;
         $conn->commit();
         echo json_encode([
             'status' => 'success',
-            'message' => 'Address added successfully',
-            'data' => ['id' => $new_id]
+            'message' => 'Address updated successfully'
         ]);
     } else {
-        throw new Exception('Failed to add address');
+        throw new Exception('Failed to update address');
     }
     $stmt->close();
 
