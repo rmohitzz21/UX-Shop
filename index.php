@@ -199,7 +199,7 @@
                 <span style="font-weight: 100"> Designers </span>
               </h1>
               <p class="cards-hero-subtitle">
-                Design kits, UI assets, and learning resources — available on
+                Design kits, UI assets, and learning resources available on
                 UXPACIFIC and partner platforms.
               </p>
               <a href="shopAll.php" class="nav-cta new">Buy Now</a>
@@ -250,7 +250,7 @@
           <p class="story-text">
             UXPACIFIC Shop is a curated marketplace for designers, creators,
             and modern teams. We bring together thoughtfully designed physical
-            merchandise and high-quality digital resources — built to inspire
+            merchandise and high-quality digital resources built to inspire
             creativity, elevate workflows, and reflect the UXPACIFIC design
             mindset.<br /><br />
             From apparel and stickers to UI templates, workbooks, and creative
@@ -276,7 +276,7 @@
             </div>
             <h3>Browse</h3>
             <p>
-              Explore premium UXPACIFIC products — apparel, design tools, and
+              Explore premium UXPACIFIC products apparel, design tools, and
               resources crafted for creators.
             </p>
           </article>
@@ -287,7 +287,7 @@
             </div>
             <h3>Select & Buy</h3>
             <p>
-              Choose what you love and place your order in just a few clicks —
+              Choose what you love and place your order in just a few clicks
               digital or physical.
             </p>
           </article>
@@ -415,7 +415,7 @@
         </h2>
         <p class="section-subtitle">
           Explore newly added products designed to inspire creativity, elevate
-          your workflow, and represent the UXPACIFIC design mindset — both
+          your workflow, and represent the UXPACIFIC design mindset both
           physical and digital.
         </p>
 
@@ -514,7 +514,7 @@
           </h2>
           <p class="section-subtitle">
             Looking for more than just the latest drops? Browse our complete
-            range of physical and digital products — from apparel and creative
+            range of physical and digital products from apparel and creative
             merchandise to UI templates, workbooks, and design resources.
           </p>
 
@@ -533,7 +533,7 @@
           <div class="footer-brand">
             <img src="img/logo1.webp" alt="UX Pacific" />
             <p>
-              Design resources and merchandise trusted by creators worldwide —
+              Design resources and merchandise trusted by creators worldwide 
               built to be used, worn, and valued.
             </p>
             <div class="footer-socials">

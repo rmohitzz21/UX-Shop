@@ -295,7 +295,7 @@ $maxPrice = ceil($priceRange['max_price'] ?? 500);
           <div class="footer-top">
             <div class="footer-brand">
               <img src="img/logo1.webp" alt="UX Pacific" />
-              <p>Design resources and merchandise trusted by creators worldwide - built to be used, worn, and valued.</p>
+              <p>Design resources and merchandise trusted by creators worldwide  built to be used, worn, and valued.</p>
               <div class="footer-socials">
                 <a href="https://dribbble.com/social-ux-pacific" target="_blank" rel="noopener"><img src="img/bl.webp" alt="Dribbble" /></a>
                 <a href="https://www.instagram.com/official_uxpacific/" target="_blank" rel="noopener"><img src="img/i.webp" alt="Instagram" /></a>

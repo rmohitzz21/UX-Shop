@@ -120,3 +120,19 @@ Stack trace:
 [27-Mar-2026 19:06:32 Europe/Berlin] PHP Warning:  mysqli::__construct(): (HY000/2002): No connection could be made because the target machine actively refused it in D:\xampp\htdocs\ux\Ux-Merchandise\includes\config.php on line 59
 [27-Mar-2026 19:06:59 Europe/Berlin] PHP Warning:  mysqli::__construct(): (HY000/2002): No connection could be made because the target machine actively refused it in D:\xampp\htdocs\ux\Ux-Merchandise\includes\config.php on line 59
 [27-Mar-2026 19:08:43 Europe/Berlin] PHP Warning:  mysqli::__construct(): (HY000/2002): No connection could be made because the target machine actively refused it in D:\xampp\htdocs\ux\Ux-Merchandise\includes\config.php on line 59
+[27-Mar-2026 19:58:45 Europe/Berlin] PHP Fatal error:  Uncaught Error: Call to a member function bind_param() on bool in D:\xampp\htdocs\Ux-merchandise\UX-Shop\api\order\create.php:205
+Stack trace:
+#0 {main}
+  thrown in D:\xampp\htdocs\Ux-merchandise\UX-Shop\api\order\create.php on line 205
+[27-Mar-2026 20:06:56 Europe/Berlin] PHP Fatal error:  Uncaught Error: Call to a member function bind_param() on bool in D:\xampp\htdocs\Ux-merchandise\UX-Shop\api\order\create.php:205
+Stack trace:
+#0 {main}
+  thrown in D:\xampp\htdocs\Ux-merchandise\UX-Shop\api\order\create.php on line 205
+[27-Mar-2026 20:07:00 Europe/Berlin] PHP Fatal error:  Uncaught Error: Call to a member function bind_param() on bool in D:\xampp\htdocs\Ux-merchandise\UX-Shop\api\order\create.php:205
+Stack trace:
+#0 {main}
+  thrown in D:\xampp\htdocs\Ux-merchandise\UX-Shop\api\order\create.php on line 205
+[27-Mar-2026 20:07:15 Europe/Berlin] PHP Fatal error:  Uncaught Error: Call to a member function bind_param() on bool in D:\xampp\htdocs\Ux-merchandise\UX-Shop\api\order\create.php:205
+Stack trace:
+#0 {main}
+  thrown in D:\xampp\htdocs\Ux-merchandise\UX-Shop\api\order\create.php on line 205

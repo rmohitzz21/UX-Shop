@@ -209,7 +209,7 @@
             <div class="footer-brand">
               <img src="img/logo1.webp" alt="UX Pacific" />
               <p>
-                Design resources and merchandise trusted by creators worldwide —
+                Design resources and merchandise trusted by creators worldwide 
                 built to be used, worn, and valued.
               </p>
               <div class="footer-socials">
