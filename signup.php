@@ -11,6 +11,7 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="style.css" />
+      <link rel="icon" type="image/x-icon" href="img/faviconUXP444@4x-789.png" />
     <style>
       /* Modern Auth Page Styles */
       .auth-page-wrapper {

@@ -13,6 +13,7 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="style.css" />
+      <link rel="icon" type="image/x-icon" href="img/faviconUXP444@4x-789.png" />
   </head>
 
   <body>

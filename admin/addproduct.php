@@ -19,6 +19,7 @@ if (empty($_SESSION['csrf_token'])) {
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
     rel="stylesheet" />
   <link rel="stylesheet" href="../style.css" />
+    <link rel="icon" type="image/x-icon" href="../img/faviconUXP444@4x-789.png" />
   <style>
     /* ==================== ADD PRODUCT PAGE STYLES ==================== */
 
